@@ -29,6 +29,8 @@ class Part():
         return isinstance(other, Part) and self.part_id == other.part_id
 
     def getCurrentProgram(self):
+        if not self.programs or self.current_step >= len(self.programs):
+            return None
         return self.programs[self.current_step]
 
     # ------------------------------------------------------------------
@@ -64,6 +66,14 @@ class Part():
         )
 
     def updateCurrentParts(self):
+        # Si la pieza ya se borro de parts (unassign desde el conveyor) no se
+        # debe volver a insertar en currentParts: quedaria una fila huerfana
+        # que despues revienta las vistas que cruzan las dos tablas.
+        if not parts_repo.exists(self.part_id):
+            print(f"⚠️ {self.part_id} YA NO EXISTE EN parts, NO SE ACTUALIZA currentParts")
+            current_parts_repo.delete(self.part_id)
+            self.status = 0
+            return
         program = self.programs[self.current_step]
         current_parts_repo.upsert((
             self.part_id, self.part_num, self.current_step + 1, program.program_id,

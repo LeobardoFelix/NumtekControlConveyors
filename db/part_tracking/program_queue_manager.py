@@ -100,7 +100,7 @@ class ProgramQueueManager():
                 
     def getShortestDistancePart(self, queue, robotNum):
         shortestDist = None
-        highestPriorityIndex = -1    
+        highestPriorityIndex = -1
         for i, part in enumerate(queue):
             auxPart = part
             programa = auxPart.getCurrentProgram()
@@ -112,6 +112,9 @@ class ProgramQueueManager():
             else:
                 ownerRobot = programa.robot_num
             if ownerRobot == robotNum: #Si le pertenece al robot
+                #Gate manual de conveyor B: un robot solo mueve en B si el radio
+                #(priority) está asignado a él. Si no, espera hasta que el operador
+                #cambie el radio. Es el control manual pedido, sin aviso en pantalla.
                 if self.isInConvB(part) and self.priority != robotNum:
                     continue
                 distance = self.getDistance(part)

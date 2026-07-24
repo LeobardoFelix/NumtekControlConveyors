@@ -1,7 +1,7 @@
 import configparser
 import os
 
-DEV_MODE = False  # set to False before shipping to production
+DEV_MODE = os.environ.get("NUTRIX_DEV_MODE", "0") == "1"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.ini")

@@ -132,7 +132,7 @@ class TraceHangersWindow(QMainWindow):
         # *** Radio button ROBOT 1 ***
         self.radioR1 = QRadioButton("ASSIGN ROBOT 1 TO CONVEYOR B")
         self.radioR1.setFont(QFont(self.radioR1.font().family(), FONT_SIZE))
-        self.radioR1.setChecked(True)
+        # El radio marcado se decide más abajo según queueManager.priority.
         self.robotButtonGroup.addButton(self.radioR1, 1)
         hbox.addWidget(self.radioR1)
 
@@ -240,11 +240,15 @@ class TraceHangersWindow(QMainWindow):
         self.timerConn.start(WAIT_LED_TIME)
 
         # ---------- LOAD PARTS ----------
-        ids = current_parts_repo.all_ids_ordered()
+        ids = current_parts_repo.all_ids_ordered() or []
         piezas = []
         for id in ids:
             pid = id[0] if isinstance(id, tuple) else id
             aux = parts_repo.get_trace_info(pid)
+            if not aux:
+                # Fila huerfana: sigue en currentParts pero ya no existe en parts.
+                print(f"⚠️ TRACE HANGERS: SE OMITE {pid} (NO EXISTE EN LA TABLA parts)")
+                continue
             piezas.append(aux[0])
 
         self.mainTable = QTableWidget()
@@ -277,6 +281,16 @@ class TraceHangersWindow(QMainWindow):
 
         self.radioR1.clicked.connect(self.on_robot_selected)
         self.radioR2.clicked.connect(self.on_robot_selected)
+
+        # El radio refleja la prioridad REAL del conveyor B. queueManager es un
+        # singleton: su priority sobrevive al cerrar/abrir esta ventana, así que
+        # mostramos el valor vigente para que el radio nunca mienta (antes se
+        # quedaba fijo en R1 mientras priority seguía en 2). setChecked no dispara
+        # 'clicked', por lo que no reentra en on_robot_selected.
+        if self.queueManager.priority == 2:
+            self.radioR2.setChecked(True)
+        else:
+            self.radioR1.setChecked(True)
 
         self.timer.updateDryingParts()
 
@@ -321,6 +335,9 @@ class TraceHangersWindow(QMainWindow):
             partId = pieza[0]
             partNum = pieza[1]
             programs = current_parts_repo.get_trace_programs(partId)
+            if not programs:
+                print(f"⚠️ TRACE HANGERS: SIN DATOS EN currentParts PARA {partId}")
+                continue
             programId,part_num, minTime, maxTime, robot, state, start_date, start_time, end_date, end_time, \
             run_time, hanger_num, conveyor_start, conveyor_end, time_deviation, hanger_end, current_hanger, current_conveyor, current_step = programs[0]
 

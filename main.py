@@ -8,6 +8,7 @@ from inicio.login import VentanaLogin
 from inicio.splash import mostrar_splash
 from db.database import inicializar_base_datos
 from config import settings
+from config.settings import DEV_MODE
 from ventana_principal.principal import VentanaPrincipal
 
 def manejar_excepcion(exctype, value, tb):
@@ -25,6 +26,7 @@ TIEMPO_SPLASH_MS = 3000
 TEXT_INSTANCIA_EJECUCION = "LA APLICACION YA SE ESTÁ EJECUTANDO."
 TEXT_INSTANCIA_EJECUCION_2 = "INSTANCIA EN EJECUCIÓN"
 ventana_login = None
+ventana_principal = None
 
 def main():
     try:
@@ -42,10 +44,10 @@ def main():
             server = QLocalServer()
             server.listen(APP_UNICA)
         def lanzar_login():
-            global ventana_login
+            global ventana_login, ventana_principal
             try:
-                if settings.simulation:
-                    print("🟡 Simulation mode — auto login as admin")
+                if DEV_MODE:
+                    print("🟡 Dev mode — auto login as admin")
                     ventana_principal = VentanaPrincipal("admin")
                     ventana_principal.show()
                 else:

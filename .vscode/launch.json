@@ -13,6 +13,18 @@
             "python": "${workspaceFolder}/venv/bin/python",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: main.py (dev mode)",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "NUTRIX_DEV_MODE": "1"
+            }
         }
     ]
 }
