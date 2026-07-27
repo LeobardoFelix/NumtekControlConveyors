@@ -15,7 +15,7 @@ class BulkAssignWindow(BulkRangeWindow):
     RANGE_LABEL = "{0} FREE HANGER(S) IN RANGE - {1} SKIPPED (FULL OR DISABLED)"
 
     def __init__(self, conveyor, parent=None):
-        super().__init__(conveyor, "ADD IN BULK", parent)
+        super().__init__(conveyor, "ASSIGN IN BULK", parent)
         self.added = 0
 
         row = self.ROW_CONTENT
@@ -81,7 +81,7 @@ class BulkAssignWindow(BulkRangeWindow):
             return
 
         resp = QMessageBox.question(
-            self, "ADD IN BULK",
+            self, "ASSIGN IN BULK",
             f"¿Asignar el PART NUMBER '{partNum}' y la WORK ORDER '{workOrder}' "
             f"a {len(hangers)} hangers del conveyor {self.conveyor} "
             f"(rango {start} - {end})?",
@@ -105,14 +105,14 @@ class BulkAssignWindow(BulkRangeWindow):
 
         if fallidos:
             QMessageBox.warning(
-                self, "ADD IN BULK",
+                self, "ASSIGN IN BULK",
                 f"{self.added} PART(S) ADDED.\n"
                 f"FAILED ON HANGER(S): {', '.join(str(h) for h in fallidos)}",
             )
             return
 
         QMessageBox.information(
-            self, "ADD IN BULK", f"{self.added} PART(S) ADDED."
+            self, "ASSIGN IN BULK", f"{self.added} PART(S) ADDED."
         )
         self.accept()
 

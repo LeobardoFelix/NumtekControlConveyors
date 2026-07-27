@@ -36,7 +36,7 @@ class TablaConveyor(QWidget):
 
         barra = QHBoxLayout()
         barra.addStretch()
-        self.btn_bulk = QPushButton("ADD IN BULK")
+        self.btn_bulk = QPushButton("ASSIGN IN BULK")
         font = self.btn_bulk.font()
         font.setPointSize(FONT_SIZE)
         self.btn_bulk.setFont(font)
