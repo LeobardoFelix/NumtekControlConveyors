@@ -150,7 +150,10 @@ class RobotCoordinator(QObject):
 
             
             self.robot.set_bool_output(2,True)
+            print("EN ESPERA DE 8 SEGUNDOS DESPUES DEL RUNNING")
             time.sleep(8)
+            print("SE APAGO LA SALIDA 2/CONFIRMACION TAKEN ")
+
             self.robot.set_bool_output(2,False)
 
 
@@ -183,12 +186,14 @@ class RobotCoordinator(QObject):
             part.putInConveyor(program.current_conveyor, program.current_hanger) 
             self.programEnded.emit(part, program)
             self.queueManager.isBTaken = 0 #Liberamos el conveyor B
-
             
             #PRENDER CONFIRMACION LEFT/SENAL NUMERO 3
             self.robot.set_bool_output(3,True)
+            print("EN ESPERA DE 8 SEGUNDOS DESPUES DEL DRYING")
+
             time.sleep(8)
             self.robot.set_bool_output(3,False)
+            print("SE APAGO LA SALIDA 3/CONFIRMACION LEFT ")
 
             if robotNum == 1:
                 self.queueManager.currentPartRobot1 = None

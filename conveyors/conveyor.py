@@ -15,6 +15,8 @@ from db.repositories import conveyors_repo, part_numbers_repo, current_parts_rep
 from utils.helpers import MultiRowBorderDelegate, FONT_SIZE, LEN_SIZE, getDateTime, getNewId
 from db.part_tracking.parts_service import delete_part
 from conveyors.reassign_window import ReassingWindow
+from conveyors.bulk_assign_window import BulkAssignWindow
+from conveyors.bulk_unassign_window import BulkUnassignWindow
 
 class TablaConveyor(QWidget):
     datos_actualizados = pyqtSignal()
@@ -31,6 +33,37 @@ class TablaConveyor(QWidget):
         titulo.setAlignment(Qt.AlignCenter)
         titulo.setStyleSheet("font-size: 30px; font-weight: bold; color: #2596be;") #Og 30px
         layout.addWidget(titulo)
+
+        barra = QHBoxLayout()
+        barra.addStretch()
+        self.btn_bulk = QPushButton("ADD IN BULK")
+        font = self.btn_bulk.font()
+        font.setPointSize(FONT_SIZE)
+        self.btn_bulk.setFont(font)
+        self.btn_bulk.setMinimumWidth(LEN_SIZE)
+        self.btn_bulk.setStyleSheet("""
+            QPushButton {
+                background-color: #2596be;
+                color: white; font-weight: bold; padding: 6px; border-radius: 6px;
+            }
+            QPushButton:hover { background-color: #1f7fa0; }
+        """)
+        self.btn_bulk.clicked.connect(self.addInBulk)
+        barra.addWidget(self.btn_bulk)
+
+        self.btn_bulk_unassign = QPushButton("UNASSIGN IN BULK")
+        self.btn_bulk_unassign.setFont(font)
+        self.btn_bulk_unassign.setMinimumWidth(LEN_SIZE)
+        self.btn_bulk_unassign.setStyleSheet("""
+            QPushButton {
+                background-color: #d9534f;
+                color: white; font-weight: bold; padding: 6px; border-radius: 6px;
+            }
+            QPushButton:hover { background-color: #c9302c; }
+        """)
+        self.btn_bulk_unassign.clicked.connect(self.unassignInBulk)
+        barra.addWidget(self.btn_bulk_unassign)
+        layout.addLayout(barra)
 
         self.tabla = QTableWidget()
         headers = [
@@ -245,6 +278,20 @@ class TablaConveyor(QWidget):
         partWind.exec()
         self.cargar_datos()
     
+    def addInBulk(self):
+        bulkWind = BulkAssignWindow(self.conveyor, self)
+        bulkWind.exec()
+        self.cargar_datos()
+        if bulkWind.added:
+            self.datos_actualizados.emit()
+
+    def unassignInBulk(self):
+        bulkWind = BulkUnassignWindow(self.conveyor, self)
+        bulkWind.exec()
+        self.cargar_datos()
+        if bulkWind.removed:
+            self.datos_actualizados.emit()
+
     def unassignPart(self, numero_hanger, part_actual):
         resp = QMessageBox.question(
             self, "UNASSIGN PART NUMBER",
