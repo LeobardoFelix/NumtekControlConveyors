@@ -57,6 +57,16 @@ class BotonAnimado(QPushButton):
         self.setStyleSheet(
             "background-color: #2596be; color: white; font-size: 20px; border-radius: 8px;"
         )
+    def setEnabled(self, a0):
+        super().setEnabled(a0)
+        if a0 == False: 
+            self.setStyleSheet(
+                    "background-color: gray; color: white; font-size: 20px; border-radius: 8px;"
+                )
+        else:
+            self.setStyleSheet(
+                        "background-color: #2596be; color: white; font-size: 20px; border-radius: 8px;"
+                    )
 
 #TODO: ERASE DEBUGGING AND DUAL CONSOLE
 # --- Main window ---
@@ -102,8 +112,8 @@ class VentanaPrincipal(QMainWindow):
             acciones.pop("SEQUENCES", None)
             acciones.pop("PARTS NUMBERS", None)
 
-        conveyors = ["CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "CONVEYOR D"]
-
+        self.conveyors = ["CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "CONVEYOR D"]
+        self.conveyorButtons = []
         # --- Create buttons ---
         for texto, clase_widget in acciones.items():
             boton = BotonAnimado(texto)
@@ -114,12 +124,14 @@ class VentanaPrincipal(QMainWindow):
                     thread2=coordinator2Thread, timerThread=timer_thread:
                     self.mostrar_ventana(t, w, [r1, l1, r2, l2, c1, c2, pt, pqm, thread1, thread2, timerThread])
                 )
-            elif texto in conveyors:
+            elif texto in self.conveyors:
                 letra = texto.split()[-1]  # A, B, C, D
                 boton.clicked.connect(
                     lambda checked, t=texto, w=clase_widget, l=letra:
                     self.mostrar_ventana(t, w, l)
                 )
+                if letra != 'D':
+                    self.conveyorButtons.append(boton)
             elif texto == "ROBOT 2":
                 boton.clicked.connect(
                     lambda checked, t=texto, w=clase_widget, coor=robot2Coordinator: self.mostrar_ventana(t, w, [coor])
@@ -163,7 +175,8 @@ class VentanaPrincipal(QMainWindow):
             widget = widget_class(*args) if args else widget_class()
             self.ventanas[nombre] = widget
             self.stack.addWidget(widget)
-        
+        if nombre == "MAIN":
+            widget.tabTrace.disable_on_hold_signal.connect(self.desableConveyors)
         if isinstance(widget, SubventanaConveyor) and "MAIN" in self.ventanas:
             main_win = self.ventanas["MAIN"]
             widget.datos_actualizados.connect(main_win.tabTrace.loadLayout)
@@ -225,3 +238,12 @@ class VentanaPrincipal(QMainWindow):
         if respuesta == QMessageBox.Yes:
             self.confirmado_para_salir = True
             self.close()
+
+    def desableConveyors(self, desable):
+        print("DESHABILITAR")
+        for boton in self.conveyorButtons:
+            if desable == 0:
+                boton.setEnabled(False)
+            else:
+                boton.setEnabled(True)
+

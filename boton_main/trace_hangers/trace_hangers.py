@@ -43,6 +43,7 @@ class TraceHangersWindow(QMainWindow):
 
     update_conn_signal = pyqtSignal(list)
     update_table_signal = pyqtSignal(str, int, str)
+    disable_on_hold_signal = pyqtSignal(int)
 
     def __init__(self, robot1:Robot, robot1Loader:RobotLoader, robot2:Robot, robot2Loader:RobotLoader, 
         robot1Coordinator:RobotCoordinator, robot2Coordinator:RobotCoordinator, partsTimer:PartsTimer, queueManager:ProgramQueueManager, 
@@ -475,6 +476,7 @@ class TraceHangersWindow(QMainWindow):
     def startCycle(self,button: QPushButton):
         #TODO: SIMPLIFY SIGNALS
         #Inician los coordinadores
+        self.disable_on_hold_signal.emit(0)
         is_admin_mode_ready_in_any_robot: bool = self.robot1Coordinator.robot1.reader_values[0] or self.robot1Coordinator.robot2.reader_values[0]
 
         if not is_admin_mode_ready_in_any_robot:
@@ -529,6 +531,7 @@ class TraceHangersWindow(QMainWindow):
         self.ledR2Stopped.setStyleSheet(f"color:green; font-size:{FONT_SIZE+4}px;")
         self.ledR1Started.setStyleSheet(f"color:gray; font-size:{FONT_SIZE+4}px;")
         recordButton.setEnabled(True)
+        self.disable_on_hold_signal.emit(1)
         self.stopRobot1()
         self.stopRobot2()
         self.stopTimer()
