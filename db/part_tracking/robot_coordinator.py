@@ -211,7 +211,12 @@ class RobotCoordinator(QObject):
 
 
     def sendOutput(self, conveyor, hanger):
-
+        #TODO: ADD 8 sec pulse signal into
+        # A 0 
+        # B1 1
+        # B2 4 
+        # C 0
+        # D 1
         if conveyor in ["A", "B"]:
             index = 0 if conveyor == "A" else 1
             self.robot1.set_float_output(index, hanger)
@@ -237,18 +242,20 @@ class RobotCoordinator(QObject):
         self.currentPart = self.queueManager.getNextPart(self.robotNum)
 
         if self.currentPart != None:
-            if self.currentPart.getCurrentProgram().state != "WAITING":
+            #EL siguiente if es redundante pero es por seguridad
+            if self.currentPart.getCurrentProgram().state != "WAITING" or self.currentPart.getCurrentProgram().state != "OVERDUE":
                 self.currentPart.getCurrentProgram().current_hanger = copy.deepcopy(self.currentPart.getCurrentProgram().hanger_num)
                 self.currentPart.getCurrentProgram().current_conveyor = copy.deepcopy(self.currentPart.getCurrentProgram().conveyor_start)
+            #Cambiar de partes en la UI
             if self.lastPart: 
                 self.changedPart.emit(self.lastPart, self.currentPart, self.robotNum)
             else:
                 self.startPart.emit(self.currentPart, self.robotNum)
             #TODO: ADD VERIFICATION OF CONNECTION
             #self.waitForEndHangerOk(program, self.currentPart)
-            if self.currentPart.getCurrentProgram().state == "WAITING":
+            if self.currentPart.getCurrentProgram().state == "WAITING" or self.currentPart.getCurrentProgram().state == "OVERDUE":
                 if self.robotNum == robotToDebug:
-                    self.dc.print(f"R{self.robotNum}: ENTRO UNA PIEZA EN WAITING", self.robotNum)
+                    self.dc.print(f"R{self.robotNum}: ENTRO UNA PIEZA EN WAITING OR OVERDUE", self.robotNum)
                 #Obtenemos el siguiente programa
                 nextProgram = self.queueManager.getNextProgram(self.currentPart)
                 if nextProgram is None:
@@ -262,8 +269,7 @@ class RobotCoordinator(QObject):
                     else:
                         self.queueManager.currentPartRobot2 = None
                     return
-                if self.robotNum == robotToDebug:
-                    self.dc.print(f"R{self.robotNum}: NEXT PROGRAM: {nextProgram.program_id} START: {nextProgram.hanger_num} {nextProgram.conveyor_start} END: {nextProgram.hanger_end}{nextProgram.conveyor_end}", self.robotNum)
+                self.dc.print(f"R{self.robotNum}: NEXT PROGRAM: {nextProgram.program_id} START: {nextProgram.hanger_num} {nextProgram.conveyor_start} END: {nextProgram.hanger_end}{nextProgram.conveyor_end}", self.robotNum)
                 self.showPreliminarNextProgram.emit(self.currentPart, nextProgram)
                 #esperamos por sus hangers
                 if self.checkForAlarm(self.currentPart):

@@ -107,7 +107,7 @@ class ProgramQueueManager():
             nextProgram = self.getNextProgram(auxPart)
             #Si la pieza espera, le pertenece al robot del siguiente programa; en la última
             #etapa no hay siguiente, así que le pertenece al robot del programa actual.
-            if programa.state == "WAITING":
+            if programa.state == "WAITING" or programa.state == "OVERDUE":
                 ownerRobot = nextProgram.robot_num if nextProgram else programa.robot_num
             else:
                 ownerRobot = programa.robot_num
@@ -118,7 +118,7 @@ class ProgramQueueManager():
                 if self.isInConvB(part) and self.priority != robotNum:
                     continue
                 distance = self.getDistance(part)
-                self.dc.print(f"R{robotNum}:  {auxPart.part_id} PROGRAM: {programa.program_id} STATE: {programa.state} DIST: {distance}", robotNum)
+                #self.dc.print(f"R{robotNum}:  {auxPart.part_id} PROGRAM: {programa.program_id} STATE: {programa.state} DIST: {distance}", robotNum)
                 if shortestDist == None:
                     shortestDist = distance
                     highestPriorityIndex = i
@@ -183,11 +183,11 @@ class ProgramQueueManager():
             if newPart.getCurrentProgram().current_hanger is None:
                 print(f"ERROR: Part {partId[0]} has no current hanger")
 
-            if newPart.getCurrentProgram().state == "WAITING":
+            if newPart.getCurrentProgram().state == "OVERDUE":
                 self.priorityQueue.append(newPart)
             elif newPart.getCurrentProgram().state == "DRYING":
                 self.dryingList.append(newPart)
-            elif newPart.getCurrentProgram().state == "READY":
+            elif newPart.getCurrentProgram().state == "READY" or newPart.getCurrentProgram().state == "WAITING":
                 self.mainQueue.append(newPart)
 
 
@@ -228,19 +228,19 @@ class ProgramQueueManager():
         if program.program_id in self.aToa:
             hanger_end = program.hanger_num
             conveyor_end = 'A'
-            print('pasando de A a A')
+            #print('pasando de A a A')
         elif program.program_id in self.aTob:
             conveyor_end = 'B'
             hanger_end = self.getClosestEmptyHanger(conveyor_end)
-            print('pasando de A a B')
+            #print('pasando de A a B')
         elif program.program_id in self.bToc:
             conveyor_end = 'C'
             hanger_end = self.getClosestEmptyHanger(conveyor_end)
-            print('pasando de B a C')
+            #print('pasando de B a C')
         elif program.program_id in self.cToc:
             hanger_end = program.hanger_num
             conveyor_end = 'C' 
-            print('pasando de C a C')
+            #print('pasando de C a C')
         elif program.program_id in self.cTod:
             conveyor_end = 'D'
             hanger_end = self.getClosestEmptyHanger(conveyor_end)
@@ -260,7 +260,7 @@ class ProgramQueueManager():
         else:
             print("INVALID HANGER")
             return
-        print(f'current hanger {currentHanger}')
+        #print(f'current hanger {currentHanger}')
 
         #TODO: VERIFY SELECTION IN COORDINATOR AND MANAGER IF THERE IS NOT NEXT PROGRAM
         hangers = conveyors_repo.empty_hangers(conveyor)
@@ -282,7 +282,6 @@ class ProgramQueueManager():
             return None
         currentProgram = copy.deepcopy(part.programs[part.current_step])
         nextProgram = copy.deepcopy(part.programs[part.current_step+1])
-        #nextProgram.state = "WAITING"
         nextProgram.hanger_num = copy.deepcopy(currentProgram.hanger_end)
         nextProgram.conveyor_start = copy.deepcopy(currentProgram.conveyor_end)
         nextProgram.current_hanger = copy.deepcopy(nextProgram.hanger_num)
@@ -297,7 +296,7 @@ class ProgramQueueManager():
         program = part.getCurrentProgram()
         if not program:
             return False
-        if program.state == "WAITING" or program.state == "DRYING":
+        if program.state in ["WAITING", "DRYING", "OVERDUE"]:
             nextProgram = self.getNextProgram(part)
             if not nextProgram:
                 if program.current_conveyor == 'B':

@@ -113,10 +113,13 @@ class VentanaPrincipal(QMainWindow):
             acciones.pop("PARTS NUMBERS", None)
 
         self.conveyors = ["CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "CONVEYOR D"]
-        self.conveyorButtons = []
+        self.disableOnHoldButtons = []
+        self.disableOnHoldNames = ["PROGRAMS", "SEQUENCES", "PARTS NUMBERS", "CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "ROBOT 1", "ROBOT 2"]
         # --- Create buttons ---
         for texto, clase_widget in acciones.items():
             boton = BotonAnimado(texto)
+            if texto in self.disableOnHoldNames:
+                self.disableOnHoldButtons.append(boton)
             if texto == "MAIN":
                 boton.clicked.connect(
                     lambda checked, t=texto, w=clase_widget, r1=robot1, r2=robot2, l1=robot1Loader, l2=robot2Loader, 
@@ -130,8 +133,6 @@ class VentanaPrincipal(QMainWindow):
                     lambda checked, t=texto, w=clase_widget, l=letra:
                     self.mostrar_ventana(t, w, l)
                 )
-                if letra != 'D':
-                    self.conveyorButtons.append(boton)
             elif texto == "ROBOT 2":
                 boton.clicked.connect(
                     lambda checked, t=texto, w=clase_widget, coor=robot2Coordinator: self.mostrar_ventana(t, w, [coor])
@@ -176,7 +177,7 @@ class VentanaPrincipal(QMainWindow):
             self.ventanas[nombre] = widget
             self.stack.addWidget(widget)
         if nombre == "MAIN":
-            widget.tabTrace.disable_on_hold_signal.connect(self.desableConveyors)
+            widget.tabTrace.disable_on_hold_signal.connect(self.disableButtonsOnHold)
         if isinstance(widget, SubventanaConveyor) and "MAIN" in self.ventanas:
             main_win = self.ventanas["MAIN"]
             widget.datos_actualizados.connect(main_win.tabTrace.loadLayout)
@@ -239,10 +240,10 @@ class VentanaPrincipal(QMainWindow):
             self.confirmado_para_salir = True
             self.close()
 
-    def desableConveyors(self, desable):
+    def disableButtonsOnHold(self, isOnHold):
         print("DESHABILITAR")
-        for boton in self.conveyorButtons:
-            if desable == 0:
+        for boton in self.disableOnHoldButtons:
+            if isOnHold == 0:
                 boton.setEnabled(False)
             else:
                 boton.setEnabled(True)

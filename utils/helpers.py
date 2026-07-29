@@ -22,6 +22,16 @@ def isFormat(tiempo):
             return False
     return True
 
+def time2MinHour(tiempo):
+    tiempos = tiempo.split(":")
+    hora = tiempos[0]
+    if len(hora) < 2:
+        hora = "0" + hora
+    min = tiempos[1]
+    if len(min) < 2:
+        min = "0" + min
+    return hora+":"+min
+
 def isEarlierThan(firstTime, secondTime):
     #AWAITS TWO INPUTS IN FORMAT: HRS:MIN:SECOND OR MONT/DAY/YEAR
     #1 = secondTime is earlier than firstTime

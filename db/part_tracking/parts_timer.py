@@ -12,7 +12,7 @@ WAITING_TIME = 1
 
 class PartsTimer(QObject):
     updateTimer = Signal(str, str)
-    updatePart = Signal(Part)
+    updateTimeDev = Signal(Part)
 
     def __init__(self):
         super().__init__()
@@ -70,20 +70,25 @@ class PartsTimer(QObject):
             self.updateTimer.emit(part.part_id, str(auxSecSince))
 
             if secLeft <= 0:
-                if program.state != "WAITING" and program.state != "DONE":
+                if program.state != ["WAITING","OVERDUE", "DONE"]:
                     program.state = "WAITING"
-                program.time_deviation = str("-" + secondsToTime(secLeft*-1)) if secToMax > 0 else str(secondsToTime(secToMax*-1))
+                if secToMax <= 0 and program.state not in ["DONE", "OVERDUE"]:
+                    program.state = "OVERDUE"
+                #TODO: Erease the first character = or - when implemented state OVERDUE
+                program.time_deviation = str(secondsToTime(secLeft*-1)) if secToMax > 0 else str(secondsToTime(secToMax*-1))
                 program.current_conveyor = program.conveyor_end
                 program.current_hanger = program.hanger_end
                 currentProgram = current_parts_repo.get_program_id(part.part_id)
                 currentProgram = currentProgram[0][0]
-                if currentProgram == program.program_id:
+                part.updateAll()
+                self.updateTimeDev.emit(part)
+                """if currentProgram == program.program_id:
                     part.updateAll()
-                    self.updatePart.emit(part)
+                    self.updateTimeDev.emit(part)
                 else:
                     print("CURRENT PARTS IS NOT THE SAME AS TIMER")
                     print("IT SHOULD BE UPDATING IN OTHER THREAD AND NOT HAPPEN CONSECUTIVELY")
-                    print(f"CURRENT: {currentProgram} UPDATING: {program.program_id}")
+                    print(f"CURRENT: {currentProgram} UPDATING: {program.program_id}")"""
 
     def stopTimer(self):
         self.stopChecking = True

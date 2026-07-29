@@ -9,8 +9,9 @@ from PyQt5 import QtGui
 import threading
 from db.part_tracking.part  import Part
 from db.part_tracking.program  import Program
+from db.part_tracking.parts_service import load_part
 import time
-from utils.helpers import MultiRowBorderDelegate, FONT_SIZE, secondsToTime
+from utils.helpers import MultiRowBorderDelegate, FONT_SIZE, time2MinHour
 from db.repositories import current_parts_repo, parts_repo, part_numbers_repo
 from db.part_tracking.robot_coordinator import RobotCoordinator
 from db.part_tracking.parts_timer import PartsTimer
@@ -38,6 +39,8 @@ CURCONV_COL  = 14
 DEV_COL      = 15
 WAITING_TIME = 1 
 WAIT_LED_TIME = 10000 #ms
+
+timeColumns = [MINDRY_COL, MAXDRY_COL, CURDRY_COL, START_COL, END_COL, RUN_COL, DEV_COL]
 
 class TraceHangersWindow(QMainWindow):
 
@@ -85,7 +88,7 @@ class TraceHangersWindow(QMainWindow):
         self.timer.moveToThread(self.timer_thread)
         self.timer_thread.started.connect(self.timer.timerCycle)
         self.timer.updateTimer.connect(self.updateCurrentTimer)
-        self.timer.updatePart.connect(self.updateTimeDev)
+        self.timer.updateTimeDev.connect(self.updateTimeDev)
 
         self.timer.updateDryingParts()
         self.timer_thread.start()
@@ -341,55 +344,33 @@ class TraceHangersWindow(QMainWindow):
                 continue
             programId,part_num, minTime, maxTime, robot, state, start_date, start_time, end_date, end_time, \
             run_time, hanger_num, conveyor_start, conveyor_end, time_deviation, hanger_end, current_hanger, current_conveyor, current_step = programs[0]
-
-
-            #print(partNum)
-
-
             sequence = part_numbers_repo.get_sequence_id(part_num)
-            #print(part_num)
-
             sequenceId = sequence[0][0] if sequence else ""
-
             self.mainTable.setRowHeight(r, FONT_SIZE * 2 + 10)
-            statusItem =  QTableWidgetItem(state)
-            currentItem = QTableWidgetItem("")
             items = [
-                QTableWidgetItem(partId),
-                QTableWidgetItem(programId),
-                QTableWidgetItem(str(robot)),
-                QTableWidgetItem(str(sequenceId)),
-                QTableWidgetItem(str(current_step)),
-                QTableWidgetItem(minTime),
-                QTableWidgetItem(maxTime),
-                currentItem,
-                statusItem,
-                QTableWidgetItem(start_date),
-                QTableWidgetItem(start_time),
-                QTableWidgetItem(end_time),
-                QTableWidgetItem(run_time),
-                QTableWidgetItem(str(current_hanger)),
-                QTableWidgetItem(str(current_conveyor)),
-                QTableWidgetItem(time_deviation)
+                partId,
+                programId,
+                str(robot),
+                str(sequenceId),
+                str(current_step),
+                minTime,
+                maxTime,
+                "",
+                state,
+                start_date,
+                start_time,
+                end_time,
+                run_time,
+                str(current_hanger),
+                str(current_conveyor),
+                time_deviation
             ]
             nonColorValues = [0, None, "00/00/00", "00:00", "IDLE", "", " "]
             color = QtGui.QColor("#c8f7c5")
 
             for i, item in enumerate(items):
-                aux = item.text()
-                if not (item.text() in nonColorValues):
-                    item.setBackground(color)
-                item.setTextAlignment(Qt.AlignCenter)
-                font = item.font()
-                font.setPointSize(FONT_SIZE)
-                item.setFont(font)
-
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-
-                if item.text() == 'ALARM' :
-                    item.setBackground(QtGui.QColor("red"))
-
-                self.mainTable.setItem(r, i, item)
+                newItem = self.formatTableWidgetItem(item, i, state)
+                self.mainTable.setItem(r, i, newItem)
             self.mainTable.resizeRowsToContents()
             self.adjustTableHeight(self.mainTable)
             self.mainTable.updateGeometry()
@@ -415,24 +396,16 @@ class TraceHangersWindow(QMainWindow):
 
     @Slot(str, int, str)
     def updateTableCell(self, partId, column=None, value=None):
+        #DRYING Is not set in time deviation
+        #= is WAITING
+        #- is OVERDUE
+        #_ is DONE
+        partStatus = load_part(partId).getCurrentProgram().state
         rows = self.mainTable.rowCount()
         for row in range(rows):
             item = self.mainTable.item(row, 0)
             if item and item.text() == partId:
-                newItem = QTableWidgetItem(str(value))
-                newItem.setTextAlignment(Qt.AlignCenter)
-                font = newItem.font()
-                font.setPointSize(FONT_SIZE)
-                newItem.setFont(font)
-                if column == DEV_COL:
-                    if value[0] == "-":
-                        newItem.setBackground(QtGui.QColor("red"))
-                    else:
-                        newItem.setBackground(QtGui.QColor("#c8f7c5"))
-                    newItem.setText(value)
-                else:
-                    newItem.setBackground(QtGui.QColor("#c8f7c5"))
-                    
+                newItem = self.formatTableWidgetItem(value, column, state=partStatus)
                 self.mainTable.setItem(row, column, newItem)
                 break
 
@@ -456,27 +429,54 @@ class TraceHangersWindow(QMainWindow):
             item = self.mainTable.item(row, 0)
             if item and item.text() == part.part_id:
                 for column, value in  zip(cols, vals):
-                    newItem = QTableWidgetItem(str(value))
-                    newItem.setTextAlignment(Qt.AlignCenter)
-                    font = newItem.font()
-                    font.setPointSize(FONT_SIZE)
-                    newItem.setFont(font)
-                    if column == DEV_COL:
-                        if value[0] == "-":
-                            newItem.setBackground(QtGui.QColor("red"))
-                        else:
-                            newItem.setBackground(QtGui.QColor("#c8f7c5"))
-                        newItem.setText(value)
-                    else:
-                        newItem.setBackground(QtGui.QColor("#c8f7c5"))
-
+                    newItem = self.formatTableWidgetItem(value, column, program.state)
                     self.mainTable.setItem(row, column, newItem)
                 break
 
+
+    def formatTableWidgetItem(self, value, column, state=None):
+        #TODO: Change the character base decisition for STATE base once OVERDUE state is implemented
+                            #TODO:Change the formatting of a value to a function to modify both updateTablePart and updateTableCell at the same time
+        newItem = QTableWidgetItem(str(value))
+        nonColorValues = [0, None, "00/00/00", "00:00", "IDLE", "", " "]
+        if column in timeColumns:
+            formatedTime = time2MinHour(value) if value not in ["", " "] else ""
+            newItem.setText(formatedTime)
+            if column == DEV_COL:
+                if state == "WAITING":
+                    #newItem.setText(formatedTime)
+                    newItem.setBackground(QtGui.QColor("yellow"))
+                elif state == "OVERDUE":
+                    #newItem.setText(formatedTime)
+                    newItem.setBackground(QtGui.QColor("red"))
+                elif state == "DONE":
+                    newItem.setText("00:00")
+                    newItem.setBackground(QtGui.QColor("#1faff1"))
+                else:
+                    #newItem.setText(formatedTime)
+                    newItem.setBackground(QtGui.QColor("#c8f7c5"))
+            else:
+                #newItem.setText(formatedTime)
+                if not (value in nonColorValues):
+                    newItem.setBackground(QtGui.QColor("#c8f7c5"))
+
+        elif not (value in nonColorValues):
+                newItem.setBackground(QtGui.QColor("#c8f7c5"))
+
+        elif value == 'ALARM' :
+            newItem.setBackground(QtGui.QColor("red"))
+        newItem.setTextAlignment(Qt.AlignCenter)
+        font = newItem.font()
+        font.setPointSize(FONT_SIZE)
+        newItem.setFont(font)
+        return newItem
+        
     def startCycle(self,button: QPushButton):
         #TODO: SIMPLIFY SIGNALS
         #Inician los coordinadores
         self.disable_on_hold_signal.emit(0)
+        self.radioR1.setEnabled(False)
+        self.radioR2.setEnabled(False)
         is_admin_mode_ready_in_any_robot: bool = self.robot1Coordinator.robot1.reader_values[0] or self.robot1Coordinator.robot2.reader_values[0]
 
         if not is_admin_mode_ready_in_any_robot:
@@ -504,7 +504,6 @@ class TraceHangersWindow(QMainWindow):
 
     def getReadyState(self, robotNum):
         robot = self.robot1 if robotNum == 1 else self.robot2
-        #convOK = self.robot1.convAOk else s
         if robot.home_all and robot.machine_ready and robot.machine_on and robot.program_idle:
             return True
         return False
@@ -531,12 +530,16 @@ class TraceHangersWindow(QMainWindow):
         self.ledR2Stopped.setStyleSheet(f"color:green; font-size:{FONT_SIZE+4}px;")
         self.ledR1Started.setStyleSheet(f"color:gray; font-size:{FONT_SIZE+4}px;")
         recordButton.setEnabled(True)
-        self.disable_on_hold_signal.emit(1)
+        
         self.stopRobot1()
         self.stopRobot2()
         self.stopTimer()
 
         self.recordButton.setEnabled(True)
+        self.radioR1.setEnabled(True)
+        self.radioR2.setEnabled(True)
+        self.disable_on_hold_signal.emit(1)
+
 
     #def restart_robot_1(self):
 
