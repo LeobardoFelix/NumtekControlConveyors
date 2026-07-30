@@ -95,7 +95,7 @@ class RobotCoordinator(QObject):
             return True
 
         if self.loader.connected:
-            print(f"paso1")
+            print(f"Inicia a correr el programa hasta completarlo")
             #Espera a que el siguiente hanger este en ṕosición
             self.loader.load_program(program.path)
             self.loader.run_program()
@@ -103,7 +103,7 @@ class RobotCoordinator(QObject):
             startTime = time.time()
             waitTime =  time.time() - startTime 
             #Espera a que el programa empiece a correr
-            print(f"paso2")
+            print(f"Empieza a esperar a que corra el programa")
             while not self.robot.program_running and waitTime < TIME_OUT_2:
                 waitTime =  time.time() - startTime
                 if self.checkForAlarm(part):
@@ -243,9 +243,13 @@ class RobotCoordinator(QObject):
 
         if self.currentPart != None:
             #EL siguiente if es redundante pero es por seguridad
-            if self.currentPart.getCurrentProgram().state != "WAITING" or self.currentPart.getCurrentProgram().state != "OVERDUE":
+            if self.currentPart.getCurrentProgram().state not in ["WAITING", "OVERDUE"]:
                 self.currentPart.getCurrentProgram().current_hanger = copy.deepcopy(self.currentPart.getCurrentProgram().hanger_num)
                 self.currentPart.getCurrentProgram().current_conveyor = copy.deepcopy(self.currentPart.getCurrentProgram().conveyor_start)
+                self.dc.print(f"""COORDINATOR LLEGO READY PART ID: {self.currentPart.part_id} PROGRAM_ID: {self.currentPart.getCurrentProgram().program_id} 
+                CURR: {self.currentPart.getCurrentProgram().current_conveyor}{self.currentPart.getCurrentProgram().current_hanger}
+                START: {self.currentPart.getCurrentProgram().conveyor_start}{self.currentPart.getCurrentProgram().hanger_num} 
+                END: {self.currentPart.getCurrentProgram().conveyor_end}{self.currentPart.getCurrentProgram().hanger_end}""", self.robotNum)
             #Cambiar de partes en la UI
             if self.lastPart: 
                 self.changedPart.emit(self.lastPart, self.currentPart, self.robotNum)
@@ -253,23 +257,37 @@ class RobotCoordinator(QObject):
                 self.startPart.emit(self.currentPart, self.robotNum)
             #TODO: ADD VERIFICATION OF CONNECTION
             #self.waitForEndHangerOk(program, self.currentPart)
-            if self.currentPart.getCurrentProgram().state == "WAITING" or self.currentPart.getCurrentProgram().state == "OVERDUE":
-                if self.robotNum == robotToDebug:
-                    self.dc.print(f"R{self.robotNum}: ENTRO UNA PIEZA EN WAITING OR OVERDUE", self.robotNum)
+            if self.currentPart.getCurrentProgram().state in ["WAITING", "OVERDUE"]:
+                self.dc.print(f"R{self.robotNum}: ENTRO UNA PIEZA EN WAITING OR OVERDUE", self.robotNum)
                 #Obtenemos el siguiente programa
+                #actualizamos su desviación estandar
+                self.dc.print(f"""COORDINATOR AFTER PASS ID: {self.currentPart.part_id} PROGRAM_ID: {self.currentPart.getCurrentProgram().program_id} 
+                CURR: {self.currentPart.getCurrentProgram().current_conveyor}{self.currentPart.getCurrentProgram().current_hanger}
+                START: {self.currentPart.getCurrentProgram().conveyor_start}{self.currentPart.getCurrentProgram().hanger_num} 
+                END: {self.currentPart.getCurrentProgram().conveyor_end}{self.currentPart.getCurrentProgram().hanger_end}""", self.robotNum)
                 nextProgram = self.queueManager.getNextProgram(self.currentPart)
+                self.updateTimeDev.emit(self.currentPart)
+                #pasamos al siguiente programa
+                self.queueManager.passToNextProgram(self.currentPart, self.robotNum)
+                self.updateProgramPart.emit(self.currentPart, self.currentPart.getCurrentProgram())
+                self.timer.updateDryingParts()
+                self.dc.print(f"""COORDINATOR AFTER PASS ID: {self.currentPart.part_id} PROGRAM_ID: {self.currentPart.getCurrentProgram().program_id} 
+                CURR: {self.currentPart.getCurrentProgram().current_conveyor}{self.currentPart.getCurrentProgram().current_hanger}
+                START: {self.currentPart.getCurrentProgram().conveyor_start}{self.currentPart.getCurrentProgram().hanger_num} 
+                END: {self.currentPart.getCurrentProgram().conveyor_end}{self.currentPart.getCurrentProgram().hanger_end}""", self.robotNum)
+
+                #nextProgram = self.queueManager.getNextProgram(self.currentPart)
                 if nextProgram is None:
-                    #Última etapa: la pieza ya llegó a su destino final, solo se termina y se libera el robot
-                    self.dc.print(f"R{self.robotNum}: ÚLTIMA ETAPA, TERMINANDO PIEZA {self.currentPart.part_id}", self.robotNum)
-                    self.queueManager.passToNextProgram(self.currentPart, self.robotNum)
-                    self.updateProgramPart.emit(self.currentPart, self.currentPart.getCurrentProgram())
-                    self.timer.updateDryingParts()
+                    #self.queueManager.passToNextProgram(self.currentPart, self.robotNum)
+                    #self.updateProgramPart.emit(self.currentPart, self.currentPart.getCurrentProgram())
+                    #self.timer.updateDryingParts()
+                    self.dc.print(f"R{self.robotNum}: LLEGO UN ULTIMO PROGRAMA", self.robotNum)
                     if self.robotNum == 1:
                         self.queueManager.currentPartRobot1 = None
                     else:
                         self.queueManager.currentPartRobot2 = None
                     return
-                self.dc.print(f"R{self.robotNum}: NEXT PROGRAM: {nextProgram.program_id} START: {nextProgram.hanger_num} {nextProgram.conveyor_start} END: {nextProgram.hanger_end}{nextProgram.conveyor_end}", self.robotNum)
+                #self.dc.print(f"R{self.robotNum}: NEXT PROGRAM: {nextProgram.program_id} START: {nextProgram.hanger_num} {nextProgram.conveyor_start} END: {nextProgram.hanger_end}{nextProgram.conveyor_end}", self.robotNum)
                 self.showPreliminarNextProgram.emit(self.currentPart, nextProgram)
                 #esperamos por sus hangers
                 if self.checkForAlarm(self.currentPart):
@@ -281,11 +299,11 @@ class RobotCoordinator(QObject):
                 if self.checkForAlarm(self.currentPart):
                     return
                 #actualizamos su desviación estandar
-                self.updateTimeDev.emit(self.currentPart)
+                #self.updateTimeDev.emit(self.currentPart)
                 #pasamos al siguiente programa
-                self.queueManager.passToNextProgram(self.currentPart, self.robotNum)
-                self.updateProgramPart.emit(self.currentPart, self.currentPart.getCurrentProgram())
-                self.timer.updateDryingParts()
+                #self.queueManager.passToNextProgram(self.currentPart, self.robotNum)
+                #self.updateProgramPart.emit(self.currentPart, self.currentPart.getCurrentProgram())
+                #self.timer.updateDryingParts()
                 #IF THE NEXT PROGRAM ISN'T of robot1
             else:
                 if self.checkForAlarm(self.currentPart):
@@ -296,6 +314,7 @@ class RobotCoordinator(QObject):
                 self.waitForEndHangerOk(self.currentPart.getCurrentProgram(), self.currentPart)
                 if self.checkForAlarm(self.currentPart):
                     return
+                
             answer = self.runProgramToCompletion(self.currentPart)
             self.currentPart.updateAll()
         else:
@@ -306,18 +325,6 @@ class RobotCoordinator(QObject):
             time.sleep(10)
     @Slot()
     def startCycle(self):
-        admin_ready_check: bool = self.robot1.reader_values[0]
-
-        #QMessageBox.warning(None, "hola", "saludos")
-
-
-        # if admin_ready_check:
-        #     print(f"YES {admin_ready_check}")
-        #     QMessageBox.warning(None, "hola", "saludos")
-
-        # else:
-        #     print(f"NOPE {admin_ready_check}")
-
         try:
             while not self.fullStop:
                 if not self.stopProcessing:

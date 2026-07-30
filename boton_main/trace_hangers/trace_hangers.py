@@ -502,12 +502,6 @@ class TraceHangersWindow(QMainWindow):
             self.ledR1Started.setStyleSheet(f"color:green; font-size:{FONT_SIZE+4}px;")
             self.ledR2Stopped.setStyleSheet(f"color:gray; font-size:{FONT_SIZE+4}px;")
 
-    def getReadyState(self, robotNum):
-        robot = self.robot1 if robotNum == 1 else self.robot2
-        if robot.home_all and robot.machine_ready and robot.machine_on and robot.program_idle:
-            return True
-        return False
-
     def startTimer(self):
         self.timer.fullStop = False
         self.timer.stopChecking = False
@@ -525,27 +519,31 @@ class TraceHangersWindow(QMainWindow):
         self.robot2Coordinator.stopProcessing = False
         self.coordinator2Thread.start()
 
-    def stopUpdate(self, recordButton: QPushButton):
-        self.isListening = False
-        self.ledR2Stopped.setStyleSheet(f"color:green; font-size:{FONT_SIZE+4}px;")
-        self.ledR1Started.setStyleSheet(f"color:gray; font-size:{FONT_SIZE+4}px;")
-        recordButton.setEnabled(True)
-        
-        self.stopRobot1()
-        self.stopRobot2()
-        self.stopTimer()
-
-        self.recordButton.setEnabled(True)
-        self.radioR1.setEnabled(True)
-        self.radioR2.setEnabled(True)
-        self.disable_on_hold_signal.emit(1)
-
-
+    def getReadyState(self, robotNum):
+            robot = self.robot1 if robotNum == 1 else self.robot2
+            if robot.home_all and robot.machine_ready and robot.machine_on and robot.program_idle:
+                return True
+            return False
     #def restart_robot_1(self):
 
 
     def kill_program_thread(self):
         pass
+
+    def stopUpdate(self, recordButton: QPushButton):
+            self.isListening = False
+            self.ledR2Stopped.setStyleSheet(f"color:green; font-size:{FONT_SIZE+4}px;")
+            self.ledR1Started.setStyleSheet(f"color:gray; font-size:{FONT_SIZE+4}px;")
+            recordButton.setEnabled(True)
+            
+            self.stopRobot1()
+            self.stopRobot2()
+            self.stopTimer()
+    
+            self.recordButton.setEnabled(True)
+            self.radioR1.setEnabled(True)
+            self.radioR2.setEnabled(True)
+            self.disable_on_hold_signal.emit(1)
 
     def stopTimer(self):
         self.timer.stopTimer()
@@ -628,7 +626,7 @@ class TraceHangersWindow(QMainWindow):
         if program.state == "DRYING":
             self.timer.addDryingPart(part) 
 
-        #print(f"TIME DEV: {doneProgram.time_deviation}")
+        #print(f"UI: TIME DEV: {program.time_deviation} PART ID: {part.part_id}")
         self.update_table_signal.emit(
                     part.part_id,
                     DEV_COL,

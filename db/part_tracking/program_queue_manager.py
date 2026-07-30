@@ -63,10 +63,10 @@ class ProgramQueueManager():
             #print(f"PRIMER ROBOT: {self.currentPartRobot2.getCurrentProgram().current_hanger}{self.currentPartRobot2.getCurrentProgram().current_conveyor}")
 
         if len(self.priorityQueue) > 0:
-            self.dc.print(f"PRIORITY LIST: ", robotNum)
+            #self.dc.print(f"PRIORITY LIST: ", robotNum)
             #for part in self.priorityQueue:
             #    self.dc.print(f"R{robotNum}: PART: {part.part_id} PROGR: {part.getCurrentProgram().program_id} STATE: {part.getCurrentProgram().state}", robotNum)
-            self.dc.print(f"R{robotNum}: START PRIORITY QUEUE CHECK", robotNum)
+            #self.dc.print(f"R{robotNum}: START PRIORITY QUEUE CHECK", robotNum)
             shortestDistPart = self.getShortestDistancePart(self.priorityQueue, robotNum)
             highestPriorityPart = shortestDistPart
 
@@ -80,10 +80,10 @@ class ProgramQueueManager():
 
         
         if len(self.mainQueue) > 0:
-            self.dc.print(f"MAIN LIST: ", robotNum)
+            #self.dc.print(f"MAIN LIST: ", robotNum)
             # for part in self.mainQueue:
             #     self.dc.print(f"R{robotNum}: PART: {part.part_id} PROGR: {part.getCurrentProgram().program_id} STATE: {part.getCurrentProgram().state}", robotNum)
-            self.dc.print(f"R{robotNum}: START MAIN QUEUE CHECK", robotNum)
+            #self.dc.print(f"R{robotNum}: START MAIN QUEUE CHECK", robotNum)
             shortestDistPart = self.getShortestDistancePart(self.mainQueue, robotNum)
             highestPriorityPart = shortestDistPart
             if highestPriorityPart:
@@ -194,10 +194,15 @@ class ProgramQueueManager():
 
     def passToNextProgram(self, part:Part, robotNum):
         currentProgram = part.getCurrentProgram()
+        #self.dc.print(f"ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} C: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}", robotNum)
         currentProgram.state = "DONE"
-        self.dc.print(f"R{robotNum}: PROGRAM {currentProgram.program_id} IS DONE: {part.getCurrentProgram().state}", robotNum)
+        #self.dc.print(f"R{robotNum}: PROGRAM {currentProgram.program_id} IS DONE: {part.getCurrentProgram().state}", robotNum)
         part.updateAll()
         self.timer.updateDryingParts()
+        self.dc.print(f"""QUEUE BEFORE PASS ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} 
+        CURR: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}
+        START: {part.getCurrentProgram().conveyor_start}{part.getCurrentProgram().hanger_num} 
+        END: {part.getCurrentProgram().conveyor_end}{part.getCurrentProgram().hanger_end}""", robotNum)
         self.dc.print(f"R{robotNum}: PART IS PASSING", robotNum)
         if part.current_step+1 < len(part.programs):
             nextProgram = part.programs[part.current_step+1]
@@ -208,14 +213,18 @@ class ProgramQueueManager():
             nextProgram.state = 'READY'
             part.current_step = part.current_step + 1 
             part.updateAll()
-            self.dc.print(f"R{robotNum}: NEW PROGRAM ID: {part.programs[part.current_step].program_id} ", robotNum)
-            self.dc.print(f"R{robotNum}: PROGRAM PASSED COMPLETED", robotNum)
+            #self.dc.print(f"R{robotNum}: NEW PROGRAM ID: {part.programs[part.current_step].program_id} ", robotNum)
+            #self.dc.print(f"R{robotNum}: PROGRAM PASSED COMPLETED", robotNum)
         else:
             self.dc.print(f"R{robotNum}: TERMINO EL ÚLTIMO PROGRAMA PART: {part.part_id}", robotNum)
+            #self.dc.print(f"ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} C: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}", robotNum)
             part.endPart()
-            return #La pieza terminó; no se vuelve a escribir en currentParts
-
-        part.updateAll() #Actualización en base de datos
+            #La pieza terminó; no se vuelve a escribir en currentParts
+        self.dc.print(f"""QUEUE AFTER PASS ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} 
+        CURR: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}
+        START: {part.getCurrentProgram().conveyor_start}{part.getCurrentProgram().hanger_num} 
+        END: {part.getCurrentProgram().conveyor_end}{part.getCurrentProgram().hanger_end}""", robotNum)
+        #part.updateAll() #Actualización en base de datos
 
 
     def jumpToStartingStep(self, starting_step: int):

@@ -10,7 +10,7 @@ class CurrentPartsRepository(BaseRepository):
 
     def drying_or_waiting_ids(self):
         return self._db.query(
-            "SELECT part_id FROM currentParts WHERE state='DRYING' OR state='WAITING'"
+            "SELECT part_id FROM currentParts WHERE state='DRYING' OR state='WAITING' OR state='OVERDUE'" 
         )
 
     def get_id(self, part_id):

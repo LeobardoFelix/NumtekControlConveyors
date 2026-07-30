@@ -8,7 +8,7 @@ from utils.helpers import addTimes, getSecondsBetween, formatToTime, secondsToTi
 from time import sleep
 from datetime import datetime, date, timedelta
 
-WAITING_TIME = 1
+WAITING_TIME = 30
 
 class PartsTimer(QObject):
     updateTimer = Signal(str, str)
@@ -74,13 +74,13 @@ class PartsTimer(QObject):
                     program.state = "WAITING"
                 if secToMax <= 0 and program.state not in ["DONE", "OVERDUE"]:
                     program.state = "OVERDUE"
-                #TODO: Erease the first character = or - when implemented state OVERDUE
                 program.time_deviation = str(secondsToTime(secLeft*-1)) if secToMax > 0 else str(secondsToTime(secToMax*-1))
                 program.current_conveyor = program.conveyor_end
                 program.current_hanger = program.hanger_end
                 currentProgram = current_parts_repo.get_program_id(part.part_id)
                 currentProgram = currentProgram[0][0]
                 part.updateAll()
+                print("TIMER: TIME DEV: " + str(part.programs[part.current_step].time_deviation) + f" PART ID: {part.part_id}")
                 self.updateTimeDev.emit(part)
                 """if currentProgram == program.program_id:
                     part.updateAll()
