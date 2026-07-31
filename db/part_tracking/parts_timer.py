@@ -47,7 +47,10 @@ class PartsTimer(QObject):
             while not self.fullStop:
                 if not self.stopChecking:
                     self.checkTimer()
-                sleep(WAITING_TIME)
+                #sleep(WAITING_TIME)
+                self.waitForInterruption()
+
+            print("TIMER REALLY KILLED")
         except Exception as e:
             print(f"ERROR: {e}")
 
@@ -93,3 +96,13 @@ class PartsTimer(QObject):
     def stopTimer(self):
         self.stopChecking = True
         print("Stopped checking the timer")
+
+    def killTimer(self):
+        self.fullStop = True
+        print("TRYING TO KILL TIMER")
+
+    def waitForInterruption(self):
+            counter = 0
+            while counter < WAITING_TIME and not self.fullStop:
+                sleep(1)
+                counter = counter + 1

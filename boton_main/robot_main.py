@@ -1,8 +1,7 @@
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout,
-    QMessageBox, QFrame, QLineEdit, QSizePolicy, QScrollArea
+    QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QSizePolicy, QScrollArea
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QThread
+from PyQt5.QtCore import Qt, pyqtSignal
 import time
 import threading
 from robots.robot import Robot
@@ -124,46 +123,17 @@ class MainRobotWindow(QWidget):
 
 
             ]
-            # self.inputPinVariables = [
-            #     "ADMIN READY", "PROGRAM RUNNING", "PROGRAM PAUSE", "PROGRAM IDLE",
-            #     "PROGRAM LOAD", "MACHINE ON", "HOME ALL", 
-            #     "CONVEYOR A HANGER OK", "CONVEYOR B HANGER OK"
-            # ]
         else:
-            # self.inputPinVariables = [
-            #     "ADMIN READY", "PROGRAM RUNNING", "PROGRAM PAUSE", "PROGRAM IDLE",
-            #     "PROGRAM LOAD", "MACHINE ON", "HOME ALL", 
-            #     "CONVEYOR C HANGER OK", "CONVEYOR D HANGER OK",
-            #     "FROM CONVEYOR B", "FROM CONVEYOR C", "FROM CONVEYOR D",
-            #     "TO CONVEYOR B", "TO CONVEYOR C", "TO CONVEYOR D"
-            # ]
             self.inputPinVariables = [
                 "ADMIN READY", "PROGRAM RUNNING", "PROGRAM PAUSE", "PROGRAM IDLE",
                 "PROGRAM LOAD", "MACHINE ON", "HOME ALL", 
                 "CONVEYOR C HANGER OK", "CONVEYOR D HANGER OK",
                 "TAKEN CONV C", "LEFT CONV C", "TAKEN CONV D", "LEFT CONV D"
             ]
-            # self.inputPinVariables = [
-            #     "ADMIN READY", "PROGRAM RUNNING", "PROGRAM PAUSE", "PROGRAM IDLE",
-            #     "PROGRAM LOAD", "MACHINE ON", "HOME ALL", "CONVEYOR C HANGER OK", "CONVEYOR D HANGER OK"
-            # ]
 
         layout = QVBoxLayout()
 
-
         connBtn = QPushButton("CONNECT")
-
-        # cycleBtn = QPushButton("CYCLE START")
-        # if robot_num == "1":
-        #     cycleBtn.clicked.connect(lambda _: self.robot1Coordinator.threatStartCycle())
-        # else:
-        #     cycleBtn.clicked.connect(lambda _: self.robot2Coordinator.threatStartCycle())
-
-        # stopBtn = QPushButton("STOP CYCLE")
-        # if robot_num == "1":
-        #     stopBtn.clicked.connect(lambda _: self.robot1Coordinator.stopCycle())
-        # else:
-        #     stopBtn.clicked.connect(lambda _: self.robot2Coordinator.stopCycle())
 
         if robot._thread_started:
             connLabel = QLabel("CONNECTED")
@@ -187,13 +157,10 @@ class MainRobotWindow(QWidget):
             connBtn.clicked.connect(lambda _: self.connect(2))
 
         layout.addWidget(connBtn)
-        # layout.addWidget(cycleBtn)
-        # layout.addWidget(stopBtn)
         layout.addWidget(connLabel)
 
         # INPUTS
         inputLeds = []
-        #layout.addWidget(QLabel("INPUTS:"))
 
         for i, name in enumerate(self.inputPinVariables):
             hlayout = QHBoxLayout()
@@ -257,14 +224,15 @@ class MainRobotWindow(QWidget):
 
         return layout, inputLeds, hangerNums, readedOutputs
 
-    def stopThread(self, event):
+    def stopThread(self):
         self.isListening = False
         if hasattr(self, "led_thread") and self.led_thread.is_alive():
             self.led_thread.join()
             #self.led_thread.requestInterruption() # 1. Solicitar alto
             #self.led_thread.quit()                # 3. Salir del bucle de eventos
             #self.led_thread.wait()
-        super().closeEvent(event)
+        print("KILLED LED THREAD")
+        #super().closeEvent()
 
     def updateLedsSlot(self, robotIndex, states):
         leds = self.inputLeds[robotIndex]
@@ -272,7 +240,7 @@ class MainRobotWindow(QWidget):
             color = "green" if states[i] else "red"
             led.setStyleSheet(f"color: {color}; font-size: {FONT_SIZE+4}px;")
 
-    def threadUpdateLeds(self):
+    def thread_update_leds(self):
         while self.isListening:
             #TODO: UNCOMMENT FOR EACH ROBOT
             # self.robot2.set_float_output(0, 12)
@@ -306,7 +274,7 @@ class MainRobotWindow(QWidget):
         if not hasattr(self, "led_thread") or not self.led_thread.is_alive():
             self.isListening = True
             self.led_thread = threading.Thread(
-                target=self.threadUpdateLeds,
+                target=self.thread_update_leds,
                 daemon=True
             )
             self.led_thread.start()

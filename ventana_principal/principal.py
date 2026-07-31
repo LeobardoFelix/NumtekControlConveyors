@@ -103,8 +103,8 @@ class VentanaPrincipal(QMainWindow):
             "ROBOT 2": SubRobot2Window,
             "CONVEYOR C": SubventanaConveyor,
             "CONVEYOR D": SubventanaConveyor,
-            "OPTIONS": SubVentanaOpciones,
-            "DEBUGGIN TOOLS": SubVentanaDebug
+            "OPTIONS": SubVentanaOpciones
+            #"DEBUGGIN TOOLS": SubVentanaDebug
         }
 
         if rol == "user":
@@ -114,13 +114,14 @@ class VentanaPrincipal(QMainWindow):
 
         self.conveyors = ["CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "CONVEYOR D"]
         self.disableOnHoldButtons = []
-        self.disableOnHoldNames = ["PROGRAMS", "SEQUENCES", "PARTS NUMBERS", "CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "ROBOT 1", "ROBOT 2"]
+        self.disableOnHoldNames = ["PROGRAMS", "SEQUENCES", "PARTS NUMBERS", "CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "CONVEYOR D", "ROBOT 1", "ROBOT 2"]
         # --- Create buttons ---
         for texto, clase_widget in acciones.items():
             boton = BotonAnimado(texto)
             if texto in self.disableOnHoldNames:
                 self.disableOnHoldButtons.append(boton)
             if texto == "MAIN":
+                self.mainOption = None
                 boton.clicked.connect(
                     lambda checked, t=texto, w=clase_widget, r1=robot1, r2=robot2, l1=robot1Loader, l2=robot2Loader, 
                     c1=robot1Coordinator, c2=robot2Coordinator, pt=partsTimer, pqm=queueManager, thread1=coordinator1Thread, 
@@ -177,6 +178,7 @@ class VentanaPrincipal(QMainWindow):
             self.ventanas[nombre] = widget
             self.stack.addWidget(widget)
         if nombre == "MAIN":
+            self.mainOption = widget
             widget.tabTrace.disable_on_hold_signal.connect(self.disableButtonsOnHold)
         if isinstance(widget, SubventanaConveyor) and "MAIN" in self.ventanas:
             main_win = self.ventanas["MAIN"]
@@ -205,25 +207,31 @@ class VentanaPrincipal(QMainWindow):
                 db.backup()  # Respaldo explícito al cerrar (ya no por cada escritura)
                 QApplication.closeAllWindows()
                 # Signal all threads to stop (non-blocking)
+                #FIRST WE END TO PROCESS ANYTHING
+                robot1Coordinator.killCycle()
+                robot2Coordinator.killCycle()
+                coordinator1Thread.requestInterruption()
+                coordinator1Thread.quit()
+                coordinator2Thread.requestInterruption()
+                coordinator2Thread.quit()
+                coordinator1Thread.wait()
+                coordinator2Thread.wait()
+                #Then we can kill everyother thread
+
+
                 robot1.stopListening()
                 robot2.stopListening()
                 partsTimer.stopTimer()
                 robot1Loader.stopConnection()
                 robot2Loader.stopConnection()
-                robot1Coordinator.stopCycle()
-                robot2Coordinator.stopCycle()
                 timer_thread.requestInterruption()
+                partsTimer.killTimer()
                 timer_thread.quit()
-                coordinator1Thread.requestInterruption()
-                coordinator1Thread.quit()
-                coordinator2Thread.requestInterruption()
-                coordinator2Thread.quit()
+                self.mainOption.tabRobot.stopThread()
                 # Now wait for all threads to finish
                 robot1.joinListeningThread()
                 robot2.joinListeningThread()
                 timer_thread.wait()
-                coordinator1Thread.wait()
-                coordinator2Thread.wait()
                 event.accept()
             else:
                 event.ignore()
@@ -241,7 +249,6 @@ class VentanaPrincipal(QMainWindow):
             self.close()
 
     def disableButtonsOnHold(self, isOnHold):
-        print("DESHABILITAR")
         for boton in self.disableOnHoldButtons:
             if isOnHold == 0:
                 boton.setEnabled(False)

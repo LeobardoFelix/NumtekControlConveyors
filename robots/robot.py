@@ -82,6 +82,7 @@ class Robot:
         self.leftConvC = 0
         self.takenConvD =0
         self.leftConvD = 0
+        self.holdButtons = True
 
 
     #only for simulation in developer mode
@@ -194,13 +195,13 @@ class Robot:
 
     
     def start_connection_loop(self):
-        if getattr(self, "_thread_started", False) and getattr(self, "conn_thread") and self.conn_thread.is_alive():
+        if getattr(self, "_thread_started", False) and getattr(self, "robot_connection_thread") and self.robot_connection_thread.is_alive():
             return  # already started
         self._thread_started = True
-        self.conn_thread = threading.Thread(target=self._connection_loop, daemon=True)
-        self.conn_thread.start()
+        self.robot_connection_thread = threading.Thread(target=self.robot_connection_loop, daemon=True)
+        self.robot_connection_thread.start()
 
-    def _connection_loop(self):
+    def robot_connection_loop(self):
         self.isListening = True
 
         while self.isListening:
@@ -243,9 +244,9 @@ class Robot:
         self.isListening = False
 
     def joinListeningThread(self):
-        if hasattr(self, "conn_thread") and self.conn_thread.is_alive():
-            self.conn_thread.join()
-        print("Cycle stopped and thread finished")
+        if hasattr(self, "robot_connection_thread") and self.robot_connection_thread.is_alive():
+            self.robot_connection_thread.join()
+        print("robot_connection_thread Cycle stopped and thread finished")
         
 
 

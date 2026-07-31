@@ -29,6 +29,7 @@ class RobotCoordinator(QObject):
     updatePart = pyqtSignal(Part)
     noPart = pyqtSignal(int)
     alarmedPart = pyqtSignal(Part, Program)
+    enableButtons = pyqtSignal()
 
     starting_step = 0
 
@@ -52,6 +53,7 @@ class RobotCoordinator(QObject):
         self.currentPartIsDone = 0
         self.lastFinishedProgram = None
         self.stopProcessing = False
+        self.isOnHold = False
     #DAFMEXGuestBlock$$
 
     
@@ -199,10 +201,6 @@ class RobotCoordinator(QObject):
                 self.queueManager.currentPartRobot1 = None
             else:
                 self.queueManager.currentPartRobot2 = None
-            # if self.stopProcessing == True:
-            #     self.timer.stopTimer()
-            #     self.dc.print(f"R{self.robotNum}: Cycle stopped and thread finished", self.robotNum)
-            #     self.fullStop = True
 
             return True
         else:
@@ -327,10 +325,22 @@ class RobotCoordinator(QObject):
     def startCycle(self):
         try:
             while not self.fullStop:
+                #print(f"R{self.robotNum} H1: {self.robot1.holdButtons } H2: {self.robot2.holdButtons} H: {self.isOnHold}")
+                if not self.robot1.holdButtons and not self.robot2.holdButtons and self.isOnHold:
+                    self.enableButtons.emit()
+                    self.isOnHold = False
                 if not self.stopProcessing:
                     print("entro a processing step")
+                    if self.robotNum == 1:
+                        self.robot1.holdButtons = True
+                    else:
+                        self.robot2.holdButtons = True
                     self.processingStep()
                 else:
+                    if self.robotNum == 1:
+                        self.robot1.holdButtons = False
+                    else:
+                        self.robot2.holdButtons = False
                     time.sleep(5)
             self.dc.print(f"R{self.robotNum}: Cycle fully stopped and thread Finished", self.robotNum)
         except Exception as e:
@@ -343,10 +353,10 @@ class RobotCoordinator(QObject):
         self.dc.print(f"R{self.robotNum}: Stopping Processing Cycle, changing to awaiting", self.robotNum)
 
 
-    def stopCycle(self):
+    def killCycle(self):
         self.stopProcessing = True
         self.fullStop = True
-        self.dc.print(f"R{self.robotNum}: Cycle stopped and thread finished", self.robotNum)
+        self.dc.print(f"R{self.robotNum}: Cycle killed and thread finished", self.robotNum)
         
     def waitForHanger(self, program, part):
         part.updateAll()

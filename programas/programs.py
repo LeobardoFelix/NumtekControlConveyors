@@ -23,6 +23,7 @@ class ProgramLoaderWorker(QThread):
 
     def __init__(self, robot):
         super().__init__()
+        self.setObjectName("Program_loader_worker")
         self.robot = robot
 
     def run(self):

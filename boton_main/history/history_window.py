@@ -289,7 +289,7 @@ class HistoryWindow(QMainWindow):
             folder_path, extension = QFileDialog.getSaveFileName(
                 parent=None,
                 caption="Select Directory and Write Filename",
-                directory=self.fileWriter.getDefaultName(getcwd()),  # Starting directory (empty uses current)
+                directory= self.fileWriter.getDefaultName("/home/numtek/Desktop/COMPARTIDA/"), #self.fileWriter.getDefaultName(getcwd()),  # Starting directory (empty uses current)
                 filter="CSV y HTML;; CSV Files (*.csv);; HTML Files (*.html)" # File extensions
             )
             self.fileWriter.createFile(folder_path, extension, self.uiIds)

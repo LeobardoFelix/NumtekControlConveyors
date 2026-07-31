@@ -10,7 +10,7 @@ from boton_main.trace_hangers.trace_hangers import TraceHangersWindow
 from boton_main.robot_main import MainRobotWindow
 
 class SubMainWindow(QWidget):
-    def __init__(self, robot1, robot1Loader, robot2, robot2Loader, robot1Coordinator, robot2Coordinator, partsTimer, queueManager, thread1, thread2, timer_thread):
+    def __init__(self, robot1, robot1Loader, robot2, robot2Loader, robot1Coordinator, robot2Coordinator, partsTimer, queueManager, coordinator1Thread, coordinator2Thread, timer_thread):
         super().__init__()
 
         self.timer_thread = timer_thread 
@@ -26,7 +26,7 @@ class SubMainWindow(QWidget):
         #self.tabTrace = TraceHangersWindow(robot1, robot1Loader, robot2, robot2Loader, robot1Coordinator, robot2Coordinator, partsTimer, queueManager)
         #self.tabTrace = TraceHangersWindow(robot1Coordinator,  partsTimer)  
         self.tabTrace = TraceHangersWindow(robot1, robot1Loader, robot2, robot2Loader, robot1Coordinator, robot2Coordinator, partsTimer, 
-        queueManager, thread1, thread2, timer_thread)
+        queueManager, coordinator1Thread, coordinator2Thread, timer_thread)
 
         self.tabHistory = HistoryWindow(robot1, robot1Loader, robot2, robot2Loader, robot1Coordinator, robot2Coordinator, partsTimer, queueManager)
         self.tabs.addTab(self.tabRobot, "ROBOT MAIN")
