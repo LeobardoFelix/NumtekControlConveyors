@@ -6,7 +6,8 @@ from db.part_tracking.parts_timer import PartsTimer
 from robots.robot import Robot
 import copy
 from debugging.debuggin_window import DualConsole
-
+ROBOT2_CONVB_GAP = 14
+CONVB_LEN = 76
 class ProgramQueueManager():
     def __init__(self, robot1:Robot, robot2:Robot, timer:PartsTimer, dc:DualConsole):
         self.dc = dc
@@ -63,10 +64,6 @@ class ProgramQueueManager():
             #print(f"PRIMER ROBOT: {self.currentPartRobot2.getCurrentProgram().current_hanger}{self.currentPartRobot2.getCurrentProgram().current_conveyor}")
 
         if len(self.priorityQueue) > 0:
-            #self.dc.print(f"PRIORITY LIST: ", robotNum)
-            #for part in self.priorityQueue:
-            #    self.dc.print(f"R{robotNum}: PART: {part.part_id} PROGR: {part.getCurrentProgram().program_id} STATE: {part.getCurrentProgram().state}", robotNum)
-            #self.dc.print(f"R{robotNum}: START PRIORITY QUEUE CHECK", robotNum)
             shortestDistPart = self.getShortestDistancePart(self.priorityQueue, robotNum)
             highestPriorityPart = shortestDistPart
 
@@ -77,13 +74,8 @@ class ProgramQueueManager():
                     self.currentPartRobot2 = highestPriorityPart
                 self.priorityQueue.remove(highestPriorityPart)
                 return highestPriorityPart
-
-        
+            
         if len(self.mainQueue) > 0:
-            #self.dc.print(f"MAIN LIST: ", robotNum)
-            # for part in self.mainQueue:
-            #     self.dc.print(f"R{robotNum}: PART: {part.part_id} PROGR: {part.getCurrentProgram().program_id} STATE: {part.getCurrentProgram().state}", robotNum)
-            #self.dc.print(f"R{robotNum}: START MAIN QUEUE CHECK", robotNum)
             shortestDistPart = self.getShortestDistancePart(self.mainQueue, robotNum)
             highestPriorityPart = shortestDistPart
             if highestPriorityPart:
@@ -139,8 +131,10 @@ class ProgramQueueManager():
         hanger = None
         if conveyor == 'A':
             hanger = self.robot1.hangerA
-        elif conveyor == 'B':
+        elif conveyor == 'B': #TODO: ADD hangerB2
             hanger = self.robot1.hangerB
+            if newPart.getCurrentProgram().robot_num == 2:
+                hanger = self.formatHangerR1ToR2(hanger)
         elif conveyor == 'C':
             hanger = self.robot2.hangerC
         elif conveyor == 'D':
@@ -191,7 +185,6 @@ class ProgramQueueManager():
                 self.mainQueue.append(newPart)
 
 
-
     def passToNextProgram(self, part:Part, robotNum):
         currentProgram = part.getCurrentProgram()
         #self.dc.print(f"ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} C: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}", robotNum)
@@ -199,10 +192,10 @@ class ProgramQueueManager():
         #self.dc.print(f"R{robotNum}: PROGRAM {currentProgram.program_id} IS DONE: {part.getCurrentProgram().state}", robotNum)
         part.updateAll()
         self.timer.updateDryingParts()
-        self.dc.print(f"""QUEUE BEFORE PASS ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} 
-        CURR: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}
-        START: {part.getCurrentProgram().conveyor_start}{part.getCurrentProgram().hanger_num} 
-        END: {part.getCurrentProgram().conveyor_end}{part.getCurrentProgram().hanger_end}""", robotNum)
+        #self.dc.print(f"""QUEUE BEFORE PASS ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} 
+        #CURR: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}
+        #START: {part.getCurrentProgram().conveyor_start}{part.getCurrentProgram().hanger_num} 
+        #END: {part.getCurrentProgram().conveyor_end}{part.getCurrentProgram().hanger_end}""", robotNum)
         self.dc.print(f"R{robotNum}: PART IS PASSING", robotNum)
         if part.current_step+1 < len(part.programs):
             nextProgram = part.programs[part.current_step+1]
@@ -220,10 +213,6 @@ class ProgramQueueManager():
             #self.dc.print(f"ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} C: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}", robotNum)
             part.endPart()
             #La pieza terminó; no se vuelve a escribir en currentParts
-        self.dc.print(f"""QUEUE AFTER PASS ID: {part.part_id} PROGRAM_ID: {part.getCurrentProgram().program_id} 
-        CURR: {part.getCurrentProgram().current_conveyor}{part.getCurrentProgram().current_hanger}
-        START: {part.getCurrentProgram().conveyor_start}{part.getCurrentProgram().hanger_num} 
-        END: {part.getCurrentProgram().conveyor_end}{part.getCurrentProgram().hanger_end}""", robotNum)
         #part.updateAll() #Actualización en base de datos
 
 
@@ -270,8 +259,6 @@ class ProgramQueueManager():
             print("INVALID HANGER")
             return
         #print(f'current hanger {currentHanger}')
-
-        #TODO: VERIFY SELECTION IN COORDINATOR AND MANAGER IF THERE IS NOT NEXT PROGRAM
         hangers = conveyors_repo.empty_hangers(conveyor)
         
         shortestDist = self.getDistFromConveyor(currentHanger, hangers[0][0], conveyor)
@@ -320,4 +307,9 @@ class ProgramQueueManager():
                 return True
             else:
                 return False
-         
+
+    def formatHangerR1ToR2(self, hanger):
+        formattedHanger = hanger - ROBOT2_CONVB_GAP
+        if formattedHanger < 1:
+            formattedHanger = formattedHanger + CONVB_LEN
+        return formattedHanger

@@ -266,8 +266,9 @@ class ProgramWindow(QWidget):
 
     def connect_robot(self, robot, list_widget, num):
         try:
-            aToa = ["001", "021", "004", "024", "003"]
-            aTob = ["081", "084"]
+            aToa = ["001", "011", "021", "004", "024", "003"]
+            aTob = ["081", "084", "091"]
+            bTob = ["200"]
             bToc = ["211", "212", "216"]
             cToc = ["251", "252", "254"]
             cTod = ["361"]
@@ -287,6 +288,9 @@ class ProgramWindow(QWidget):
                             conveyor_end = 'A'
                         elif id in aTob:
                             conveyor_start = 'A'
+                            conveyor_end = 'B'
+                        elif id in bTob:
+                            conveyor_start = 'B'
                             conveyor_end = 'B'
                         elif id in bToc:
                             conveyor_start = 'B'

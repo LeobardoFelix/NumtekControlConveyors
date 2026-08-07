@@ -3,3 +3,10 @@ los steps de la secuencia. Por ejemplo, si se coloca una parte en el conveyor C,
 ese conveyor.
 
 Se debe poder seleccionar el step en el que va a iniciar una pieza?   
+
+
+Impresion dentro de robot coordinator
+self.dc.print(f"""COORDINATOR LLEGO READY PART ID: {self.currentPart.part_id} PROGRAM_ID: {self.currentPart.getCurrentProgram().program_id} 
+                #CURR: {self.currentPart.getCurrentProgram().current_conveyor}{self.currentPart.getCurrentProgram().current_hanger}
+                #START: {self.currentPart.getCurrentProgram().conveyor_start}{self.currentPart.getCurrentProgram().hanger_num} 
+                #END: {self.currentPart.getCurrentProgram().conveyor_end}{self.currentPart.getCurrentProgram().hanger_end}""", self.robotNum)

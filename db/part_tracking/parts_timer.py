@@ -9,7 +9,6 @@ from time import sleep
 from datetime import datetime, date, timedelta
 
 WAITING_TIME = 30
-
 class PartsTimer(QObject):
     updateTimer = Signal(str, str)
     updateTimeDev = Signal(Part)
@@ -83,7 +82,7 @@ class PartsTimer(QObject):
                 currentProgram = current_parts_repo.get_program_id(part.part_id)
                 currentProgram = currentProgram[0][0]
                 part.updateAll()
-                print("TIMER: TIME DEV: " + str(part.programs[part.current_step].time_deviation) + f" PART ID: {part.part_id}")
+                #print("TIMER: TIME DEV: " + str(part.programs[part.current_step].time_deviation) + f" PART ID: {part.part_id}")
                 self.updateTimeDev.emit(part)
                 """if currentProgram == program.program_id:
                     part.updateAll()

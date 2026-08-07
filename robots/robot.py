@@ -82,7 +82,6 @@ class Robot:
         self.leftConvC = 0
         self.takenConvD =0
         self.leftConvD = 0
-        self.holdButtons = True
 
 
     #only for simulation in developer mode

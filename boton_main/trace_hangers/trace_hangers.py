@@ -434,8 +434,6 @@ class TraceHangersWindow(QMainWindow):
 
 
     def formatTableWidgetItem(self, value, column, state=None):
-        #TODO: Change the character base decisition for STATE base once OVERDUE state is implemented
-                            #TODO:Change the formatting of a value to a function to modify both updateTablePart and updateTableCell at the same time
         newItem = QTableWidgetItem(str(value))
         nonColorValues = [0, None, "00/00/00", "00:00", "IDLE", "", " "]
         if column in timeColumns:
@@ -471,36 +469,30 @@ class TraceHangersWindow(QMainWindow):
         return newItem
         
     def startCycle(self,button: QPushButton):
-        #TODO: SIMPLIFY SIGNALS
         #Inician los coordinadores
+        self.recordButton.setEnabled(False)
         self.radioR1.setEnabled(False)
         self.radioR2.setEnabled(False)
         is_admin_mode_ready_in_any_robot: bool = self.robot1Coordinator.robot1.reader_values[0] or self.robot1Coordinator.robot2.reader_values[0]
 
         if not is_admin_mode_ready_in_any_robot:
-            print(f"NOPE {is_admin_mode_ready_in_any_robot}")
             QMessageBox.warning(None, "ACTION NOT POSSIBLE", "BOTH ROBOTS NEED TO BE IN ADMINISTRATOR MODE")
 
         else:
-            print(f"YES {is_admin_mode_ready_in_any_robot}")
-            #QMessageBox.warning(None, "hola", "saludos")
-            self.disable_on_hold_signal.emit(0)
             self.isListening = True
             if self.getReadyState(1):
-                self.startRobot1()
+                self.startRobot(1)
             self.stopProcessing = False
             time.sleep(1.0)
             if self.getReadyState(2):
-                self.startRobot2()
+                self.startRobot(2)
                 button.setEnabled(False)
-            else:
-                print("ROBOT 2 NO PASO")
+                
 
             self.startTimer()
             self.ledR1Started.setStyleSheet(f"color:green; font-size:{FONT_SIZE+4}px;")
             self.ledR2Stopped.setStyleSheet(f"color:gray; font-size:{FONT_SIZE+4}px;")
-            self.robot1Coordinator.isOnHold = False
-            self.robot2Coordinator.isOnHold = False
+            
             self.disable_on_hold_signal.emit(0)
 
     def startTimer(self):
@@ -510,15 +502,16 @@ class TraceHangersWindow(QMainWindow):
         if not self.timer_thread.isRunning():
             self.timer_thread.start()
 
-    def startRobot1(self):
-        self.robot1Coordinator.fullStop = False
-        self.robot1Coordinator.stopProcessing = False
-        self.coordinator1Thread.start()
-    
-    def startRobot2(self):
-        self.robot2Coordinator.fullStop = False
-        self.robot2Coordinator.stopProcessing = False
-        self.coordinator2Thread.start()
+    def startRobot(self, robotNum):
+        coordinator = self.robot1Coordinator if robotNum == 1 else self.robot2Coordinator
+        coordinator.fullStop = False
+        coordinator.stopProcessing = False
+        coordinator.canStop = False
+        if robotNum == 1:
+            self.coordinator1Thread.start()
+        else:
+            self.coordinator2Thread.start()
+
 
     def getReadyState(self, robotNum):
             robot = self.robot1 if robotNum == 1 else self.robot2
@@ -533,25 +526,29 @@ class TraceHangersWindow(QMainWindow):
             self.ledR1Started.setStyleSheet(f"color:gray; font-size:{FONT_SIZE+4}px;")
             recordButton.setEnabled(True)
             
-            self.stopRobot1()
-            self.stopRobot2()
+            self.robot1Coordinator.stopProcessingCycle()
+            self.robot2Coordinator.stopProcessingCycle()
             #self.timer.stopTimer()
-    
-            self.recordButton.setEnabled(True)
-            self.radioR1.setEnabled(True)
-            self.radioR2.setEnabled(True)
-            self.robot1Coordinator.isOnHold = True
-            self.robot2Coordinator.isOnHold = True
+            print("UI: STOP UPDATE TRACE HANGERS")
+            stoppingThread = threading.Thread(target=self.checkingForEnableButtons)
+            stoppingThread.start()
+            #stoppingThread.join()
+            
             #self.disable_on_hold_signal.emit(1)
+
+    def checkingForEnableButtons(self):
+        while not (self.robot1Coordinator.canStop and self.robot2Coordinator.canStop):
+            time.sleep(1)
+        self.disable_on_hold_signal.emit(1)
+        self.radioR1.setEnabled(True)
+        self.radioR2.setEnabled(True)
+        self.recordButton.setEnabled(True)
+        
 
     def enableButtons(self):
         self.disable_on_hold_signal.emit(1)
 
-    def stopRobot1(self):
-        self.robot1Coordinator.stopProcessingCycle()
-
-    def stopRobot2(self):
-        self.robot2Coordinator.stopProcessingCycle()
+    
 
     def on_robot_selected(self):
         selected = self.robotButtonGroup.checkedId()

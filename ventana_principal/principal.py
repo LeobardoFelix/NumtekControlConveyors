@@ -103,8 +103,8 @@ class VentanaPrincipal(QMainWindow):
             "ROBOT 2": SubRobot2Window,
             "CONVEYOR C": SubventanaConveyor,
             "CONVEYOR D": SubventanaConveyor,
-            "OPTIONS": SubVentanaOpciones
-            #"DEBUGGIN TOOLS": SubVentanaDebug
+            "OPTIONS": SubVentanaOpciones,
+            "DEBUGGIN TOOLS": SubVentanaDebug
         }
 
         if rol == "user":
