@@ -54,6 +54,9 @@ class PartsRepository(BaseRepository):
     def set_inactive(self, part_id):
         self._db.execute("UPDATE parts SET status=0 WHERE part_id=?", (part_id,))
 
+    def set_step(self, step, part_id):
+            self._db.execute("UPDATE parts SET sequence_index=? WHERE part_id=?", (step, part_id))
+
     def delete(self, part_id):
         self._db.execute("DELETE FROM parts WHERE part_id=?", (part_id,))
 

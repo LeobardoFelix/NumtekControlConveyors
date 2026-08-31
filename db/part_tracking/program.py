@@ -71,9 +71,3 @@ class Program():
             print(f"endMaxDryTime NO ESTA EN FORMATO DESDE getEndTimes: {endMaxDryTime}")
         return endDryTime, endMaxDryTime
     
-    #TODO: Esto funciona para algo?
-    """def initInHistory(self):
-        fecha, hora = getDateTime()
-        conveyor_start = parts_repo.get_conveyor(self.part_id)
-        self.conveyor_start = conveyor_start[0][0]
-        history_repo.set_running(fecha, hora, conveyor_start, self.program_id, self.part_id)"""

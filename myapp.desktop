@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Supervisor
+Version=1.0
+Type=Application
+Comment=First Version
+Exec=/home/numtek/Desktop/Nutrix/dist/main
+Icon=/home/numtek/Desktop/Nutrix/resources/logo.png
+Terminal=false
+Categories=Utility;

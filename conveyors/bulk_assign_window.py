@@ -5,6 +5,7 @@ from utils.popups import defaultErrorToast
 from db.part_tracking.parts_service import create_part
 from db.repositories import part_numbers_repo, sequences_repo
 from conveyors.bulk_range_window import BulkRangeWindow
+from db.repositories.part_numbers_repository import PartNumbersRepository
 
 VALID_INITIALS = ["SO", "SP", "EX", "PW"]
 
@@ -62,13 +63,13 @@ class BulkAssignWindow(BulkRangeWindow):
 
     # --- input handling ---
     def focusPartNumber(self):
-        if not self.workOrderValidation():
-            return
+        """if not self.workOrderValidation():
+            return"""
         self.partNumLine.setFocus()
         self.partNumLine.selectAll()
 
     def addInBulk(self):
-        if not self.workOrderValidation() or not self.partNumValidation():
+        if not self.partNumValidation():
             return
 
         partNum = self.partNumLine.text().strip()
@@ -120,12 +121,18 @@ class BulkAssignWindow(BulkRangeWindow):
     def partNumValidation(self):
         partNum = self.partNumLine.text().strip()
 
-        if not partNum or self.validate_initials(partNum):
+        """if not partNum or self.validate_initials(partNum):
             defaultErrorToast(self, "INVALID FORMAT")
             self.partNumLine.clear()
             self.partNumLine.setFocus()
-            return False
+            return False"""
 
+        if not self.isPartNumber(partNum):
+            defaultErrorToast(self, f"PART NUMBER {partNum} NOT FOUND")
+            self.partNumLine.clear()
+            self.partNumLine.setFocus()
+            return False
+        
         sequenceId = part_numbers_repo.get_sequence_id(partNum)
         if not sequenceId:
             defaultErrorToast(self, f"PART NUMBER {partNum} NOT FOUND")
@@ -148,6 +155,12 @@ class BulkAssignWindow(BulkRangeWindow):
             self.orderLine.setFocus()
             return False
         return True
+    
+    def isPartNumber(self, partNum):
+            repo = PartNumbersRepository()
+            if repo.getPartNum(partNum):
+                return True
+            return False
 
     @staticmethod
     def validate_initials(work_order: str) -> bool:

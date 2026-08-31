@@ -98,13 +98,13 @@ class VentanaPrincipal(QMainWindow):
             "SEQUENCES": SubVentanaSecuencias,
             "PARTS NUMBERS": SubventanaNumerodeParte,
             "CONVEYOR A": SubventanaConveyor,
-            "ROBOT 1": SubRobot1Window,
+            #"ROBOT 1": SubRobot1Window,
             "CONVEYOR B": SubventanaConveyor,
-            "ROBOT 2": SubRobot2Window,
+            #"ROBOT 2": SubRobot2Window,
             "CONVEYOR C": SubventanaConveyor,
             "CONVEYOR D": SubventanaConveyor,
-            "OPTIONS": SubVentanaOpciones,
-            "DEBUGGIN TOOLS": SubVentanaDebug
+            "OPTIONS": SubVentanaOpciones
+            #"DEBUGGIN TOOLS": SubVentanaDebug
         }
 
         if rol == "user":
@@ -114,7 +114,7 @@ class VentanaPrincipal(QMainWindow):
 
         self.conveyors = ["CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "CONVEYOR D"]
         self.disableOnHoldButtons = []
-        self.disableOnHoldNames = ["PROGRAMS", "SEQUENCES", "PARTS NUMBERS", "CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "CONVEYOR D", "ROBOT 1", "ROBOT 2"]
+        self.disableOnHoldNames = ["PROGRAMS", "SEQUENCES", "PARTS NUMBERS", "CONVEYOR A", "CONVEYOR B", "CONVEYOR C", "CONVEYOR D"]
         # --- Create buttons ---
         for texto, clase_widget in acciones.items():
             boton = BotonAnimado(texto)
@@ -144,7 +144,7 @@ class VentanaPrincipal(QMainWindow):
                 )
             elif texto == "DEBUGGIN TOOLS":
                 boton.clicked.connect(
-                    lambda checked, t=texto, w=clase_widget, r1=robot1, r2=robot2: self.mostrar_ventana(t, w, [r1, r2])
+                    lambda checked, t=texto, w=clase_widget, r1=robot1, r2=robot2, qm=queueManager: self.mostrar_ventana(t, w, [r1, r2, qm])
                 )
             else:
                 boton.clicked.connect(

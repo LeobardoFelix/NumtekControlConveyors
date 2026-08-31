@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QMessageBox
-from db.repositories import programs_repo
+from db.repositories import programs_repo, history_repo, current_parts_repo
 from utils.helpers import FONT_SIZE, LEN_SIZE
 from robots.robot_loader import RobotLoader
 
@@ -256,6 +256,9 @@ class tableInputDialog(QDialog):
                 programs_repo.upsert_full(new_program_id, path, robot_num, conveyor_start, conveyor_end)
             else:
                 programs_repo.update_basic(new_program_id, path, robot_num, conveyor_start, conveyor_end, program_id)
+
+            history_repo.update_conveyors_program(new_program_id, conveyor_start, conveyor_end)
+            current_parts_repo.update_conveyors_program(new_program_id, conveyor_start, conveyor_end)
             self.close()
         except Exception as e:
             QMessageBox.warning(self, "Error", f"No se pudo asignar el programa: {e}")

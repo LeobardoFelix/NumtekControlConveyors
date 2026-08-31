@@ -46,8 +46,8 @@ def inicializar_base_datos():
     init_workOrders_table()
     conveyors = {
         'A': 30,
-        'B': 76,
-        'C': 74,
+        'B': 75,
+        'C': 70,
         'D': 30
     }
     #ejecutar("DELETE FROM conveyors;")
@@ -87,7 +87,6 @@ def init_programs_table():
     """)
 
 def init_sequences_table():
-    #TODO: DELETE STEP I THINK IS USELESS
     ejecutar("""
         CREATE TABLE IF NOT EXISTS sequences (
     sequence_id TEXT,

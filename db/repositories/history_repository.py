@@ -41,6 +41,38 @@ class HistoryRepository(BaseRepository):
             (time_dev, part_id, step),
         )
 
+    def set_end_time(self, end_time, part_id, step):
+        try:
+            self._db.execute(
+                "UPDATE history SET end_time=? WHERE part_id=? AND step=?",
+                (end_time, part_id, step),
+            )
+        except Exception as e:
+            print(e)
+    def set_start_time(self, start_time, part_id, step):
+            self._db.execute(
+                "UPDATE history SET start_time=? WHERE part_id=? AND step=?",
+                (start_time, part_id, step),
+            )
+    def set_state(self, state, part_id, step):
+        self._db.execute(
+                        "UPDATE history SET state=? WHERE part_id=? AND step=?",
+                        (state, part_id, step),
+                    )
+
+        
+    def set_end_hanger(self, part_id, step, hanger, conveyor):
+        self._db.execute(
+                        "UPDATE history SET hanger_end=?, conveyor_end=? WHERE part_id=? AND step=?",
+                        (hanger, conveyor, part_id, step),
+                    )
+
+    def set_start_hanger(self, part_id, step, hanger, conveyor):
+            self._db.execute(
+                            "UPDATE history SET hanger_num=?, conveyor_start=? WHERE part_id=? AND step=?",
+                            (hanger, conveyor, part_id, step),
+                        )
+
     def mark_last_step_done(self, end_date, part_id):
         self._db.execute(
             "UPDATE history SET end_date=?, state='DONE' "
@@ -144,3 +176,9 @@ class HistoryRepository(BaseRepository):
         return self._db.query(
             "SELECT DISTINCT part_num FROM history WHERE part_id=?", (part_id,)
         )
+
+    def update_conveyors_program(self, program_id, convStart, convEnd):
+        self._db.execute("""
+                    UPDATE history SET  conveyor_start = ?, conveyor_end = ?
+                    WHERE program_id=? 
+                """, (convStart, convEnd, program_id))

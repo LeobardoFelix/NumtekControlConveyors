@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem,
+    QWidget, QLabel, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QDialog,
     QHeaderView, QHBoxLayout, QScrollArea, QMainWindow, QSizePolicy, QRadioButton, QButtonGroup, QMessageBox
 )
 
@@ -18,6 +18,7 @@ from db.part_tracking.parts_timer import PartsTimer
 from db.part_tracking.program_queue_manager import ProgramQueueManager
 from robots.robot import Robot
 from robots.robot_loader import RobotLoader
+from boton_main.trace_hangers.alarm_window import AlarmWindow
 
 TIME_OUT = 300 #Tiempo que espera una conexion antes de desconectarse. Esta definida en segundos
 
@@ -69,6 +70,7 @@ class TraceHangersWindow(QMainWindow):
         self.robot1Coordinator.noPart.connect(self.clearHighlights)
         self.robot1Coordinator.alarmedPart.connect(self.alarmPart)
         self.robot1Coordinator.enableButtons.connect(self.enableButtons)
+        self.robot1Coordinator.alarmSignal.connect(self.alarmDialog)
 
         self.robot2Coordinator = robot2Coordinator
         self.coordinator2Thread = coordinator2Thread
@@ -85,6 +87,8 @@ class TraceHangersWindow(QMainWindow):
         self.robot2Coordinator.noPart.connect(self.clearHighlights)
         self.robot2Coordinator.alarmedPart.connect(self.alarmPart)
         self.robot2Coordinator.enableButtons.connect(self.enableButtons)
+        self.robot2Coordinator.alarmSignal.connect(self.alarmDialog)
+
 
         self.timer = partsTimer
         self.timer_thread = timer_thread
@@ -285,11 +289,7 @@ class TraceHangersWindow(QMainWindow):
         self.radioR1.clicked.connect(self.on_robot_selected)
         self.radioR2.clicked.connect(self.on_robot_selected)
 
-        # El radio refleja la prioridad REAL del conveyor B. queueManager es un
-        # singleton: su priority sobrevive al cerrar/abrir esta ventana, así que
-        # mostramos el valor vigente para que el radio nunca mienta (antes se
-        # quedaba fijo en R1 mientras priority seguía en 2). setChecked no dispara
-        # 'clicked', por lo que no reentra en on_robot_selected.
+        # El radio refleja la prioridad REAL del conveyor B. 
         if self.queueManager.priority == 2:
             self.radioR2.setChecked(True)
         else:
@@ -606,7 +606,6 @@ class TraceHangersWindow(QMainWindow):
                 self.lastPartIdR2 = newPart.part_id
             program = newPart.getCurrentProgram()
             self.updateTablePart(newPart, program)
-            #TODO: QUITAR EL SIGUIENTE BLOQUE DE CODIGO, PARECE REDUNDANTE O QUE DEBERIA ESTAR EN COORDINADOR
             if lastPart != newPart and lastPart != None:
                 lastProgram = newPart.getCurrentProgram()
                 self.updateTablePart(newPart, lastProgram)
@@ -637,6 +636,14 @@ class TraceHangersWindow(QMainWindow):
                     str(currentTime)
                 )
 
+
+    def findRow(self, part):
+        rows = self.mainTable.rowCount()
+        for row in range(rows):
+            item = self.mainTable.item(row, 0)
+            if item and item.text() == part.part_id:
+                return row
+        return None
     @Slot(Part, Program)
     def alarmPart(self, part, program):
         cols = [ID_COL, PROGRAM_COL, ROBOT_COL, MINDRY_COL, MAXDRY_COL,
@@ -650,8 +657,9 @@ class TraceHangersWindow(QMainWindow):
                 program.current_hanger, program.current_conveyor,
                 program.time_deviation]
 
-        row = self._find_row(part.part_id)  # si ya implementaste _find_row
+        row = self.findRow(part)  # si ya implementaste _find_row
         if row is None:
+            print("ROW WAS NONE")
             return
 
         for col, value in zip(cols, vals):
@@ -663,7 +671,16 @@ class TraceHangersWindow(QMainWindow):
             newItem.setBackground(QtGui.QColor("red"))
             self.mainTable.setItem(row, col, newItem)
 
+
+        print(f"PARTE ALARMADA DEBIO PONERSE ROJO Y PARAR")
         self.stopUpdate(self.recordButton)
+        
+
+    @Slot()
+    def alarmDialog(self):
+        print("ALARMA ALARMA ALARMA ALARMA ALARMA ALARMA ALARMA \nALARMA ALARMA ALARMA ALARMA ALARMA ALARMA")
+        alarmWindow = AlarmWindow()
+        alarmWindow.exec()
 
     
 

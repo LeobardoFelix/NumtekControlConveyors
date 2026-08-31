@@ -9,14 +9,18 @@ from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
 from PyQt5.QtCore import Qt, QModelIndex, pyqtSignal
-
+from datetime import datetime
 import copy
 from db.repositories import conveyors_repo, part_numbers_repo, current_parts_repo
+from db.repositories.current_parts_repository import CurrentPartsRepository
+from db.repositories.history_repository import HistoryRepository 
 from utils.helpers import MultiRowBorderDelegate, FONT_SIZE, LEN_SIZE, getDateTime, getNewId
 from db.part_tracking.parts_service import delete_part
 from conveyors.reassign_window import ReassingWindow
 from conveyors.bulk_assign_window import BulkAssignWindow
+from conveyors.enable_bulk_window import EnableBulkWindow
 from conveyors.bulk_unassign_window import BulkUnassignWindow
+from conveyors.edit_sequence_window import EditPartSequenceWindow
 
 class TablaConveyor(QWidget):
     datos_actualizados = pyqtSignal()
@@ -36,17 +40,34 @@ class TablaConveyor(QWidget):
 
         barra = QHBoxLayout()
         barra.addStretch()
-        self.btn_bulk = QPushButton("ASSIGN IN BULK")
-        font = self.btn_bulk.font()
+
+        self.enable_bull_btn = QPushButton("ENABLE/DISABLE IN BULK")
+        font = self.enable_bull_btn.font()
         font.setPointSize(FONT_SIZE)
-        self.btn_bulk.setFont(font)
-        self.btn_bulk.setMinimumWidth(LEN_SIZE)
-        self.btn_bulk.setStyleSheet("""
+        self.enable_bull_btn.setFont(font)
+        self.enable_bull_btn.setMinimumWidth(LEN_SIZE)
+        self.enable_bull_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2596be;
                 color: white; font-weight: bold; padding: 6px; border-radius: 6px;
             }
             QPushButton:hover { background-color: #1f7fa0; }
+        """)
+        self.enable_bull_btn.clicked.connect(self.enableInBulk)
+        barra.addWidget(self.enable_bull_btn)
+
+        self.btn_bulk = QPushButton("ASSIGN IN BULK")
+        font = self.btn_bulk.font()
+        font.setPointSize(FONT_SIZE)
+        self.btn_bulk.setFont(font)
+        self.btn_bulk.setMinimumWidth(LEN_SIZE)
+
+        self.btn_bulk.setStyleSheet("""
+            QPushButton {
+                background-color: #5cb85c;
+                color: white; font-weight: bold; padding: 6px; border-radius: 6px;
+            }
+            QPushButton:hover { background-color: #4cae4c; }
         """)
         self.btn_bulk.clicked.connect(self.addInBulk)
         barra.addWidget(self.btn_bulk)
@@ -68,9 +89,10 @@ class TablaConveyor(QWidget):
         self.tabla = QTableWidget()
         headers = [
             "HANGER NUMBER", "STATUS", "ENABLED","PART ID", "WORK ORDER", "PART NUMBER", "SEQUENCE ID", "STATUS",
-            "ASSIGN/UNASSIGN", "ENABLE/DISABLE", "REASSIGN"
+            "ASSIGN/UNASSIGN", "ENABLE/DISABLE", "REASSIGN", "EDIT"
         ]
         self.tabla.setColumnCount(len(headers))
+        #self.tabla.setStyleSheet("QTableWidget {border : 2px solid black;}")
         self.tabla.setHorizontalHeaderLabels(headers)
         self.tabla.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tabla.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -88,6 +110,14 @@ class TablaConveyor(QWidget):
         self.tabla.setItemDelegate(self.delegate)
         for r, (hanger_id, numero_hanger, status, habilitado, part_id, part_num, order_id) in enumerate(filas):
             self.tabla.setRowHeight(r, FONT_SIZE*2+10)
+    
+            if r%2 == 0:
+                self.delegate.set_row_color(r, "black")
+            else:
+                if not habilitado:
+                    self.delegate.set_row_color(r, "#f7c5c5")
+                else:
+                    self.delegate.set_row_color(r, "#c8f7c5")
             if status == "FULL":
                 seqId = part_numbers_repo.get_sequence_id(part_num)
                 state = current_parts_repo.get_state(part_id)
@@ -179,6 +209,8 @@ class TablaConveyor(QWidget):
             btn_assign.setFont(font)
             btn_assign.setMinimumHeight(FONT_SIZE)
             btn_assign.setMinimumWidth(LEN_SIZE)
+
+            
             btn_assign.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {'#d9534f' if part_id!=None else '#5cb85c'};
@@ -243,6 +275,29 @@ class TablaConveyor(QWidget):
             lay_a.setAlignment(Qt.AlignCenter)
             lay_a.addWidget(reassign_btn)
             self.tabla.setCellWidget(r, 10, cell_assign)
+
+
+            editd_btn = QPushButton("EDIT")
+            font = editd_btn.font()
+            font.setPointSize(FONT_SIZE)
+            editd_btn.setFont(font)
+            editd_btn.setMinimumWidth(LEN_SIZE)
+            editd_btn.setStyleSheet(f"""
+                QPushBUtton {{
+                    background-color:{"#222020"};
+                    color: white; font-weight: bold; padding: 6px; border-radius: 6px;
+                }}
+                QPushButton:hover {{
+                    background-color: {"#777272"};
+                }}
+            """)
+            editd_btn.clicked.connect( lambda _, pid=part_id, hanger=numero_hanger, conv=self.conveyor:self.editSequence(pid, hanger, conv))#TODO
+            cell_assign = QWidget()
+            lay_a = QHBoxLayout(cell_assign)
+            lay_a.setContentsMargins(16, 4, 16, 4)
+            lay_a.setAlignment(Qt.AlignCenter)
+            lay_a.addWidget(editd_btn)
+            self.tabla.setCellWidget(r, 11, cell_assign)
         #self.highlight("6", 2)
         #self.highlight("21", 3)
     def highlight(self, conveyorId, tipo):
@@ -277,6 +332,12 @@ class TablaConveyor(QWidget):
         partWind = AssignPartWindow(numero_hanger, self.conveyor)
         partWind.exec()
         self.cargar_datos()
+
+    def enableInBulk(self):
+        bulkWind = EnableBulkWindow(self.conveyor)
+        bulkWind.exec()
+        self.cargar_datos()
+        self.datos_actualizados.emit()
     
     def addInBulk(self):
         bulkWind = BulkAssignWindow(self.conveyor, self)
@@ -331,8 +392,9 @@ class TablaConveyor(QWidget):
         self.cargar_datos()
         self.datos_actualizados.emit()
 
-    def update_part_state(self, part_id, new_state):
+    def update_part_state(self, part_id, new_state, step):
         current_parts_repo.set_state(new_state, part_id)
+        HistoryRepository().set_state(new_state, part_id, step)
         self.cargar_datos()
 
     def open_change_state_dialog(self, part_id):
@@ -344,7 +406,8 @@ class TablaConveyor(QWidget):
         layout = QVBoxLayout()
         label = QLabel("Select new state:")
         combo = QComboBox()
-        combo.addItems(["ALARM", "DRYING"])
+        combo.addItems(["LEAVE ALARM", "END PROGRAM", "RESTART PROGRAM"])
+        #combo.styleSheet("{font-size: 5px}") #TODO: SI HAY UN PROBLEMA ES ESTO
         combo.setCurrentText("ALARM")
 
         btn_layout = QHBoxLayout()
@@ -364,11 +427,45 @@ class TablaConveyor(QWidget):
         dialog.setLayout(layout)
         dialog.exec()
 
-    def change_state_and_close(self, dialog, part_id, new_state):
-        self.update_part_state(part_id, new_state)
+    def change_state_and_close(self, dialog, part_id, selection): #TODO: Hay otra version de esto en edit_sequence_window
+        currentPartsRepo = CurrentPartsRepository()
+        historyRepo = HistoryRepository()
+        step = currentPartsRepo.get_step(part_id=part_id)
+        step = step[0][0]
+        if selection == "END PROGRAM":
+            new_state = "DRYING"
+            self.update_part_state(part_id, new_state, step)
+            currentPartsRepo.set_end_time(part_id, datetime.now().strftime("%H:%M:%S"))
+            currentPartsRepo.set_start_time(part_id, datetime.now().strftime("%H:%M:%S"))
+            historyRepo.set_end_time(datetime.now().strftime("%H:%M:%S"), part_id, step)
+            historyRepo.set_start_time( datetime.now().strftime("%H:%M:%S"), part_id,  step=step)
+            print("ALTERAR TERMINADO")
+        if selection=="RESTART PROGRAM":
+            if step > 1:
+                new_state = "WAITING"
+                self.update_part_state(part_id, new_state, step)
+                currentPartsRepo.regressPart(part_id, new_state)
+                #self.update_part_state(part_id, new_state, step-1)
+            else:
+                new_state = "READY"
+                self.update_part_state(part_id, new_state, step)
+                currentPartsRepo.set_end_time(part_id, "00:00:00")
+                currentPartsRepo.set_start_time(part_id, "00:00:00")
+                historyRepo.set_end_time("00:00:00", part_id, step)
+                historyRepo.set_start_time( "00:00:00", part_id,  step=step)
         self.cargar_datos()
         dialog.accept()
         self.datos_actualizados.emit()
+
+    def editSequence(self, part_id, hanger, conveyor):
+        if not part_id:
+            QMessageBox.warning(self, "HANGER EMPTY", "THE HANGER IS EMPTY, TO REASSIGN THE HANGER MUST BE FULL.")
+            return
+        reassignWindow = EditPartSequenceWindow(part_id, hanger, conveyor)
+        reassignWindow.exec()
+        self.cargar_datos()
+        self.datos_actualizados.emit()
+
         
 class SubventanaConveyor(QWidget):
     datos_actualizados = pyqtSignal()

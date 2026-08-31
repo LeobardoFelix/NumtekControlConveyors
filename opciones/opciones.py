@@ -9,6 +9,7 @@ import subprocess
 from robots.robot_loader import RobotLoader
 from config import settings
 from config.settings import DEV_MODE
+from db.repositories.programs_repository import ProgramsRepository
 
 SIM_STYLE_ON = f"""
 QPushButton {{
@@ -266,12 +267,13 @@ class ProgramWindow(QWidget):
 
     def connect_robot(self, robot, list_widget, num):
         try:
-            aToa = ["001", "011", "021", "004", "024", "003"]
+            """aToa = ["001", "011", "021", "004", "024", "003"]
             aTob = ["081", "084", "091"]
             bTob = ["200"]
             bToc = ["211", "212", "216"]
             cToc = ["251", "252", "254"]
-            cTod = ["361"]
+            cTod = ["361"]"""
+            self.AtoA, self.AtoB, self.BtoB, self.BtoC, self.BtoD, self.CtoC, self.CtoD, self.DtoD = ProgramsRepository().getClassifiedPrograms()
             robot.connect()
             programs = robot.list_programs()
             #print(f' LOS PROGRAMAS XD {programs}')
@@ -283,23 +285,29 @@ class ProgramWindow(QWidget):
                     if id.isnumeric():
                         conveyor_start = None
                         conveyor_end = None
-                        if id in aToa:
+                        if id in self.AtoA:
                             conveyor_start = 'A'
                             conveyor_end = 'A'
-                        elif id in aTob:
+                        elif id in self.AtoB:
                             conveyor_start = 'A'
                             conveyor_end = 'B'
-                        elif id in bTob:
+                        elif id in self.BtoB:
                             conveyor_start = 'B'
                             conveyor_end = 'B'
-                        elif id in bToc:
+                        elif id in self.BtoC:
                             conveyor_start = 'B'
                             conveyor_end = 'C'
-                        elif id in cToc:
+                        elif id in self.BtoD:
+                            conveyor_start = 'B'
+                            conveyor_end = 'D'
+                        elif id in self.CtoC:
                             conveyor_start = 'C'
                             conveyor_end = 'C' 
-                        elif id in cTod:
+                        elif id in self.CtoD:
                             conveyor_start = 'C'
+                            conveyor_end = 'D' 
+                        elif id in self.DtoD:
+                            conveyor_start = 'D'
                             conveyor_end = 'D' 
                         programs_repo.upsert_full(id, program, num+1, conveyor_start, conveyor_end)
             else:

@@ -22,6 +22,7 @@ from utils.helpers import getDateTime, getNewId
 from db.part_tracking.parts_service import create_part
 from db.repositories import part_numbers_repo, work_orders_repo
 from utils.popups import defaultErrorToast
+from db.repositories.part_numbers_repository import PartNumbersRepository
 
 
 class AssignPartWindow(QDialog):
@@ -185,8 +186,8 @@ class writePartNumWindow(QWidget):
 
     def partNumValidation(self):
         partNum = self.partNumLine.text().strip()
-        if self.validate_initials(partNum):
-            defaultErrorToast(self,"INVALID FORMAT")
+        if not self.isPartNumber(partNum):
+            defaultErrorToast(self,"PART NUMBER DOESN'T EXIST")
             self.partNumLine.clear()
             self.partNumLine.setFocus()
             return False
@@ -202,10 +203,16 @@ class writePartNumWindow(QWidget):
             return False
         return True
 
+    def isPartNumber(self, partNum):
+        repo = PartNumbersRepository()
+        if repo.getPartNum(partNum):
+            return True
+        return False
+
     @staticmethod
     def validate_initials(work_order: str) -> bool:
 
         VALID_INITIALS = ["SO", "SP", "EX", "PW"]
         work_order_initials = work_order[0:2]
 
-        return work_order_initials in VALID_INITIALS
+        return True #work_order_initials in VALID_INITIALS

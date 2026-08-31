@@ -36,3 +36,9 @@ class PartNumbersRepository(BaseRepository):
 
     def delete(self, part_num):
         self._db.execute("DELETE FROM partNumbers WHERE part_num=?", (part_num,))
+
+    def getPartNum(self, part_num):
+        return self._db.execute(
+                    "SELECT part_num FROM partNumbers WHERE part_num=?",
+                    (part_num, ),
+                )

@@ -12,7 +12,7 @@ class ConveyorsRepository(BaseRepository):
 
     def empty_hangers(self, conveyor):
         return self._db.query(
-            "SELECT hanger_num, status FROM conveyors WHERE conveyor=? AND status='EMPTY'",
+            "SELECT hanger_num, status FROM conveyors WHERE conveyor=? AND status='EMPTY' AND enable=1",
             (conveyor,),
         )
 
@@ -30,7 +30,7 @@ class ConveyorsRepository(BaseRepository):
             (conveyor, hanger_num),
         )
 
-    def clear(self, hanger_num, conveyor):
+    def clear(self, hanger_num, conveyor):#TODO: UPDATE WORK ORDER DE LA TABLA
         """Fully empty a hanger including its order_id."""
         self._db.execute(
             "UPDATE conveyors SET part_id=NULL, part_num=NULL, status='EMPTY', order_id=NULL "
@@ -38,11 +38,11 @@ class ConveyorsRepository(BaseRepository):
             (hanger_num, conveyor),
         )
 
-    def fill(self, part_id, part_num, hanger_num, conveyor):
+    def fill(self, part_id, part_num, hanger_num, conveyor, order_id):
         self._db.execute(
-            "UPDATE conveyors SET part_id=?, part_num=?, status='FULL' "
+            "UPDATE conveyors SET part_id=?, part_num=?, order_id=?, status='FULL' "
             "WHERE hanger_num=? AND conveyor=?",
-            (part_id, part_num, hanger_num, conveyor),
+            (part_id, part_num, order_id, hanger_num, conveyor),
         )
 
     def fill_with_order(self, part_id, part_num, order_id, hanger_num, conveyor):
@@ -76,3 +76,5 @@ class ConveyorsRepository(BaseRepository):
             "VALUES (?, ?, ?, ?)",
             (hanger_id, hanger_num, conveyor, part_id),
         )
+
+

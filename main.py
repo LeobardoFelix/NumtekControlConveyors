@@ -60,7 +60,7 @@ def main():
                 traceback.print_exc()
         mostrar_splash(splash_path, TIEMPO_SPLASH_MS, lanzar_login)
         def limpiar_y_salir():
-            print("🔴 Cerrando aplicación...")
+            #print("🔴 Cerrando aplicación...")
             server.close()
             server.removeServer(APP_UNICA)
             app.quit()

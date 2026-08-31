@@ -70,13 +70,17 @@ class BulkRangeWindow(QDialog):
             return None, None
         start = int(self.fromBox.currentText())
         end = int(self.toBox.currentText())
-        return min(start, end), max(start, end)
+        return (start, end)#min(start, end), max(start, end)
 
     def rowsInRange(self):
         start, end = self.selectedRange()
         if start is None:
             return []
-        return [h for h in self.hangers if start <= int(h[1]) <= end]
+        if start < end: 
+            return [h for h in self.hangers if start <= int(h[1]) <= end]
+        else:
+            return [h for h in self.hangers if start <= int(h[1]) or int(h[1]) <= end]
+
 
     def targetRows(self):
         """Rows of the range this dialog can actually act on."""

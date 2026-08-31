@@ -9,6 +9,7 @@ from db.repositories import (
 
 def load_part(part_id):
     info = parts_repo.get_information(part_id)
+    #print(f"PID: {part_id} INFO: {info}")
     part = Part(part_id)
     if not info:
         print("ERROR: CAN NOT GET INFORMATION FOR THE PART")

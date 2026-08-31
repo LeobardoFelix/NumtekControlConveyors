@@ -31,6 +31,7 @@ class Part():
     def getCurrentProgram(self):
         if not self.programs or self.current_step >= len(self.programs):
             return None
+        #print(f"PID: {self.part_id} CURRENT STEP: {self.current_step} program: {self.programs[self.current_step].program_id} ")
         return self.programs[self.current_step]
 
     # ------------------------------------------------------------------
@@ -38,14 +39,14 @@ class Part():
     # ------------------------------------------------------------------
     def ereaseFromConveyor(self):
         program = self.programs[self.current_step]
-        conveyors_repo.free_by_program(program.conveyor_start, program.hanger_num)
+        conveyors_repo.clear(program.hanger_num, program.conveyor_start)
 
     def putInConveyor(self, conveyor, hanger):
         program = self.programs[self.current_step]
         self.ereaseFromConveyor()
         program.current_conveyor = conveyor
         program.current_hanger = hanger
-        conveyors_repo.fill(self.part_id, self.part_num, hanger, conveyor)
+        conveyors_repo.fill(self.part_id, self.part_num, hanger, conveyor, program.order_id)
 
     def updateHistory(self):
         program = self.programs[self.current_step]

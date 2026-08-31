@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QTableWidget,
-    QTableWidgetItem, QHeaderView, QHBoxLayout, QInputDialog, QMessageBox, QDialog,
+    QTableWidgetItem, QHeaderView, QHBoxLayout, QTimeEdit, QMessageBox, QDialog,
     QListWidget, QListWidgetItem, QDialogButtonBox, QComboBox, QLineEdit, QGridLayout,
     QPushButton, QTableView, QCheckBox, QSpinBox, QScrollArea
 )
@@ -187,11 +187,18 @@ class programSelectionWindow(QDialog):
             self.saveButton.clicked.connect(self.addProgramsToSequence)
         else:
             self.saveButton.clicked.connect(self.editProgramsInSequence)
+
+        self.addTimeBtn = QPushButton("ADD TIME TO MIN")
+        self.addTimeBtn.clicked.connect(self.addTime)
+        self.editHours = QLineEdit()
+        self.editHours.setText("1")
         self.cancelButton.clicked.connect(self.close)
         self.layout.addWidget( self.addButton, 2, 5)
         self.layout.addWidget( self.deleteButton , 3, 5)
         self.layout.addWidget( self.saveButton , 4, 5)
         self.layout.addWidget( self.cancelButton , 5, 5)
+        self.layout.addWidget( self.addTimeBtn , 6, 5)
+        self.layout.addWidget( self.editHours , 7, 5)
         #LIST WIDGET / ROW 0
         self.label = QLabel("SELECTED PROGRAMS")
         font = self.label.font()
@@ -306,6 +313,26 @@ class programSelectionWindow(QDialog):
             QMessageBox.warning(self, "ERROR", "THE SEQUENCE MUST HAVE 1+ PROGRAMS")
             return False
         return True
+    def addTime(self):
+        data = []
+        for row in range(self.listTable.rowCount()):
+            row_data = []
+            minWidget = self.listTable.item(row, 2)
+            maxWidget = self.listTable.item(row, 3)
+            textMin = minWidget.text()
+            newTextMax = self.addHoursToText(textMin, int(self.editHours.text()))
+            maxWidget.setText(newTextMax)
+        return data
+    def addHoursToText(self, text:str, hours):
+        "RECEIVES A TEXT STRING OF FORMAT 00:00 ADDS THE HOURS PASSED AND RETURNS THE RESULT"
+        splittedText = text.split(":")
+        if len(splittedText) >= 2:
+            horas = splittedText[0]
+            minutos = splittedText[1]
+            newHours = int(horas) +  hours
+            newHours = str(newHours) if newHours > 9 else f"0{str(newHours)}"
+            salida = str(newHours) + ":" + str(minutos)
+            return salida
 
 class subProgramSelectionWindow(QDialog):
     def __init__(self):

@@ -4,27 +4,45 @@ from opcua import Client
 import queue
 from config import settings
 UPDATE_TIME = 5
-
-
-class _SimNode:
-    """Fake OPC-UA node for offline/simulation mode."""
-    def __init__(self, name, value):
-        self._name = name
-        self._value = value
-
-    def get_browse_name(self):
-        class _N:
-            def __init__(self, n): self.Name = n
-        return _N(self._name)
-
-    def get_value(self):
-        return self._value
-
-    def set_value(self, v):
-        self._value = type(self._value)(v)
-
-    def get_children(self):
-        return []
+INPUT_INDEX_MACHINE_READY = 0
+INPUT_INDEX_PROGRAM_RUNNING = 1
+INPUT_INDEX_PROGRAM_PAUSED = 2
+INPUT_INDEX_PROGRAM_IDLE = 3
+INPUT_INDEX_PROGRAM_LOADED = 4
+INPUT_INDEX_MACHINE_ON = 5
+INPUT_INDEX_HOME_ALL = 6
+INPUT_INDEX_CONVA_OK = 7
+INPUT_INDEX_CONVB_OK = 8
+INPUT_INDEX_CONVC_OK = 7
+INPUT_INDEX_CONVD_OK = 8
+INPUT_INDEX_CONVA_TAKEN = 9
+INPUT_INDEX_CONVA_LEFT = 10
+INPUT_INDEX_CONVB_TAKEN = 11
+INPUT_INDEX_CONVB_LEFT = 12
+INPUT_INDEX_CONVC_TAKEN = 9
+INPUT_INDEX_CONVC_LEFT = 10
+INPUT_INDEX_CONVD_TAKEN = 11
+INPUT_INDEX_CONVD_LEFT = 12
+INPUT_INDEX_CONVB_R2_TAKEN = 13
+INPUT_INDEX_CONVB_R2_LEFT = 14
+FLOAT_INDEX_HANGERA = 0
+FLOAT_INDEX_HANGERB = 1
+FLOAT_INDEX_HANGERC = 0
+FLOAT_INDEX_HANGERD = 1
+OUTPUT_INDEX_CONVA_PULSE = 0
+OUTPUT_INDEX_CONVB_PULSE = 1
+OUTPUT_INDEX_CONVC_PULSE = 0
+OUTPUT_INDEX_CONVD_PULSE = 1
+OUTPUT_INDEX_CONVA_TAKEN = 2
+OUTPUT_INDEX_CONVB_TAKEN = 4
+OUTPUT_INDEX_CONVC_TAKEN = 2
+OUTPUT_INDEX_CONVD_TAKEN = 4
+OUTPUT_INDEX_CONVA_LEFT = 3
+OUTPUT_INDEX_CONVB_LEFT = 5
+OUTPUT_INDEX_CONVC_LEFT = 3
+OUTPUT_INDEX_CONVD_LEFT = 5
+OUTPUT_INDEX_R2_CONVB_TAKEN = 6
+OUTPUT_INDEX_R2_CONVB_LEFT = 7
 
 
 class Robot:
@@ -84,41 +102,12 @@ class Robot:
         self.leftConvD = 0
 
 
-    #only for simulation in developer mode
-    def _sim_setup(self):
-        # Simulate a robot sitting idle and ready, conveyors in position
-        defaults = [
-            True,  # 0
-            False, # 1 program_running
-            False, # 2 program_paused
-            True,  # 3 program_idle
-            True,  # 4 program_loaded
-            True,  # 5 machine_on
-            True,  # 6 home_all
-            True,  # 7 convA/C ok
-            True,  # 8 convB/D ok
-            False, # 9 takenConvA/C
-            False, # 10 leftConvA/C
-            False, # 11 takenConvB/D
-            False, # 12 leftConvB/D
-        ]
-        self.inputs = [_SimNode(f"input{i}", defaults[i]) for i in range(13)]
-        self.outputs = [_SimNode(f"output{i}", False) for i in range(4)]
-        self.floatInputs = [_SimNode(f"floatinput{i}", 0.0) for i in range(4)]
-        self.floatOutputs = [_SimNode(f"floatoutput{i}", 0.0) for i in range(4)]
-        self.floats = []
-
     def connect(self):
-        if self.simulation or settings.simulation:
-            self._sim_setup()
-            self.connected = True
-            print(f"{self.name}: running in SIMULATION mode")
-            return
 
         try:
             if self.client is None:
                 self.client = Client(f"opc.tcp://{self.ip}:{self.port}")
-                self.client.session_timeout = 10000
+                self.client.session_timeout = 100
 
             # Try a lightweight operation to confirm connection
             if not self.connected:
@@ -135,8 +124,6 @@ class Robot:
             print(f"ERROR ROBOT {self.name}: {e}")
 
     def classify(self):
-        if self.simulation or settings.simulation:
-            return
         self._browse(self.robot)
 
     def _browse(self, node):
@@ -160,18 +147,6 @@ class Robot:
                 if "heartbeat" in name:
                     self.heartbeat = child
 
-                # elif isinstance(value, bool):
-                #     if "output" in name:
-                #         self.outputs.append(child)
-                #     else:
-                #         self.inputs.append(child)
-
-                # elif isinstance(value, float):
-                #     self.floats.append(child)
-                #     if "floatoutput" in name:
-                #         self.floatOutputs.append(child)
-                #     else:
-                #         self.floatInputs.append(child)
                 if "floatoutput" in name:
                     self.floatOutputs.append(child)
                 elif "floatinput" in name:
@@ -255,9 +230,6 @@ class Robot:
     def _update_status_flags(self):
 
         v = self.reader_values
-        #print(f"LEN: {len(self.reader_float)}")
-        #print(f"{self.name}: INPUT VALUES {self.reader_values}")
-        #print(f"{self.name}: FLOAT INPUT VALUES: {self.reader_float}")
         if len(v) >= 8:
 
             self.machine_ready = v[0]
@@ -275,10 +247,6 @@ class Robot:
                 self.leftConvA = v[10]
                 self.takenConvB = v[11]
                 self.leftConvB = v[12]
-                # self.fromConvA = v[9]
-                # self.fromConvB = v[10]
-                # self.toConvA = v[11]
-                # self.toConvB = v[12]
                 self.hangerA = self.reader_float[0]
                 self.hangerB = self.reader_float[2]
             else:
@@ -286,28 +254,12 @@ class Robot:
                 self.convDOk = v[8]
                 self.takenConvC = v[9]
                 self.leftConvC = v[10]
-                self.takenConvB = v[11]
+                self.takenConvD = v[11]
                 self.leftConvD = v[12]
-                # self.fromConvB = v[9]
-                # self.fromConvC = v[10]
-                # self.fromConvD = v[11]
-                # self.toConvB = v[12]
-                # self.toConvC = v[13]
-                # self.toConvD = v[14]
+                self.takenConvB = v[13]
+                self.leftConvB = v[14]
                 self.hangerC = self.reader_float[0]
                 self.hangerD = self.reader_float[2]
-            #9 viene del conveyor a
-            #10 from con b
-            #11 to conv a
-            #12 to conv b
-
-            #Robto 2
-            #9 from conveyor B
-            #10 from conveyor C
-            #11 from conv D 
-            #12 to conv B
-            #13 to conv C
-            #14 to conv D
 
 
     # -----------------------------------------
@@ -352,6 +304,7 @@ class Robot:
         try:
             with self.lock:
                 self.floatOutputs[index].set_value(float(value))
+                
 
         except Exception as e:
             print(f"{self.name}: Error setting float output {index}: {e}")

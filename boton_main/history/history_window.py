@@ -31,7 +31,6 @@ TO_COL = 12
 DEV_COL = 13
 WAITING_TIME = 1 #seconds
 WAIT_LED_TIME = 10000 #ms
-#TODO: Aveces se para un contador sin motivo, revisar
 class HistoryWindow(QMainWindow):
 
     def __init__(self, robot1:Robot, robot1Loader:RobotLoader, robot2:Robot, robot2Loader:RobotLoader, 

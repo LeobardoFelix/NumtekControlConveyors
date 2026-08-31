@@ -108,20 +108,11 @@ class MainRobotWindow(QWidget):
         index = 0 if robot_num == "1" else 1
 
         if index == 0:
-            # self.inputPinVariables = [
-            #     "ADMIN READY", "PROGRAM RUNNING", "PROGRAM PAUSE", "PROGRAM IDLE",
-            #     "PROGRAM LOAD", "MACHINE ON", "HOME ALL", 
-            #     "CONVEYOR A HANGER OK", "CONVEYOR B HANGER OK",
-            #     "FROM CONVEYOR A", "FROM CONVEYOR B",
-            #     "TO CONVEYOR A", "TO CONVEYOR B"
-            # ]
             self.inputPinVariables = [
                 "ADMIN READY", "PROGRAM RUNNING", "PROGRAM PAUSE", "PROGRAM IDLE",
                 "PROGRAM LOAD", "MACHINE ON", "HOME ALL", 
                 "CONVEYOR A HANGER OK", "CONVEYOR B HANGER OK",
                 "TAKEN CONV A", "LEFT CONV A", "TAKEN CONV B", "LEFT CONV B"
-
-
             ]
         else:
             self.inputPinVariables = [
@@ -231,7 +222,7 @@ class MainRobotWindow(QWidget):
             #self.led_thread.requestInterruption() # 1. Solicitar alto
             #self.led_thread.quit()                # 3. Salir del bucle de eventos
             #self.led_thread.wait()
-        print("KILLED LED THREAD")
+        #print("KILLED LED THREAD")
         #super().closeEvent()
 
     def updateLedsSlot(self, robotIndex, states):
@@ -242,12 +233,6 @@ class MainRobotWindow(QWidget):
 
     def thread_update_leds(self):
         while self.isListening:
-            #TODO: UNCOMMENT FOR EACH ROBOT
-            # self.robot2.set_float_output(0, 12)
-            # self.robot2.set_float_output(1, 2)
-            # self.robot2.set_bool_output(0, 0)
-            # self.robot2.set_bool_output(1, 0)
-            #self.robot2.shut_down_all_outputs()
             self.update_led_signal.emit(0, list(self.robot1.reader_values))
             self.update_led_signal.emit(1, list(self.robot2.reader_values))
             self.update_hanger_signal.emit(0, self.robot1.reader_float, self.robot1.writer_float)
@@ -282,7 +267,7 @@ class MainRobotWindow(QWidget):
     def connectToRobot(self, robot):
         robot.connect()
         if not robot.connected:
-            print("ERROR")
+            print("mainRobotWindow: ERROR")
 
     def connectToLoader(self, loader, robotIndex):
         if settings.simulation:

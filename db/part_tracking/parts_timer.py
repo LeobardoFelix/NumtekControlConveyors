@@ -22,6 +22,7 @@ class PartsTimer(QObject):
 
     def updateDryingParts(self):
         parts = current_parts_repo.drying_or_waiting_ids()
+        #print(f"UPDATE DRYING PARTS: {parts}")
         new_dict = {}
         for partId in parts:
             currentPart = load_part(partId[0])
@@ -29,6 +30,9 @@ class PartsTimer(QObject):
             now = datetime.now().strftime("%H:%M:%S")
             secSince = getSecondsBetween(endTime, now)
             new_dict[currentPart] = str(timedelta(seconds=secSince))
+
+        #for key in new_dict.keys():
+        #    print(f"UPDATE DRYING PARTS: {key.part_id} PROGRAM: {key.getCurrentProgram().program_id}   TIME: {new_dict.get(key)}")
         with self._lock:
             self.dryingParts = new_dict
 
@@ -56,9 +60,10 @@ class PartsTimer(QObject):
     def checkTimer(self):
         with self._lock:
             dryParts = self.dryingParts.copy()
-
+        #print(f"DRYING PARTS: {self.dryingParts}")
         for part in dryParts:
             program = part.programs[part.current_step]
+            #print(f"PID: {part.part_id} PROGRAM: {program.program_id} END TIMES: {program.getEndTimes()}   START: {program.start_time} END: {program.end_time}")
             diffMinTime, diffMaxTime = program.getEndTimes()
             now = datetime.now().strftime("%H:%M:%S")
             secLeft = getSecondsBetween(now, diffMinTime)
@@ -70,7 +75,7 @@ class PartsTimer(QObject):
                 self.dryingParts[part] = [str(auxSecSince), str(secLeft), str(secToMax)]
 
             self.updateTimer.emit(part.part_id, str(auxSecSince))
-
+            print(f"PID: {part.part_id} PROGRAM: {program.program_id} END TIMES: {program.getEndTimes()} SECLEFT: {secLeft} secToMax: {secToMax}")
             if secLeft <= 0:
                 if program.state != ["WAITING","OVERDUE", "DONE"]:
                     program.state = "WAITING"
@@ -82,16 +87,7 @@ class PartsTimer(QObject):
                 currentProgram = current_parts_repo.get_program_id(part.part_id)
                 currentProgram = currentProgram[0][0]
                 part.updateAll()
-                #print("TIMER: TIME DEV: " + str(part.programs[part.current_step].time_deviation) + f" PART ID: {part.part_id}")
                 self.updateTimeDev.emit(part)
-                """if currentProgram == program.program_id:
-                    part.updateAll()
-                    self.updateTimeDev.emit(part)
-                else:
-                    print("CURRENT PARTS IS NOT THE SAME AS TIMER")
-                    print("IT SHOULD BE UPDATING IN OTHER THREAD AND NOT HAPPEN CONSECUTIVELY")
-                    print(f"CURRENT: {currentProgram} UPDATING: {program.program_id}")"""
-
     def stopTimer(self):
         self.stopChecking = True
         print("Stopped checking the timer")

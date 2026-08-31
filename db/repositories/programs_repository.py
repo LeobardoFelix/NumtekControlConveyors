@@ -47,6 +47,12 @@ class ProgramsRepository(BaseRepository):
             (new_program_id, path, robot_num, conveyor_start, conveyor_end, program_id),
         )
 
+    def set_end_time(self, end_time, program_id):
+            self._db.execute(
+                "UPDATE programs SET end_time = ? WHERE program_id=?",
+                (end_time, program_id),
+            )
+
     def upsert_full(self, program_id, path, robot_num, conveyor_start, conveyor_end):
         self._db.execute(
             "INSERT OR REPLACE INTO programs "
@@ -57,3 +63,49 @@ class ProgramsRepository(BaseRepository):
 
     def delete(self, program_id):
         self._db.execute("DELETE FROM programs WHERE program_id=?", (program_id,))
+
+    def getClassifiedPrograms(self, shouldPrint=False):
+        """RETURNS a list of all the programs classified in base of the 
+        conveyors it came from and the conveyor it goes, the lists are the next 
+        and are return in the next order: AtoA, AtoB, BtoB, BtoC, BtoD, CtoC, CtoD, DtoD"""
+        AtoA = []
+        AtoB = []
+        BtoB = []
+        BtoC = []
+        BtoD = []
+        CtoC = []
+        CtoD = []
+        DtoD = []
+        programs = self._db.query(
+            "SELECT program_id, conveyor_start, conveyor_end FROM programs"
+        )
+        for program, cStart, cEnd in programs:
+            if cStart == 'A':
+                if cEnd == 'A':
+                    AtoA.append(program)
+                elif cEnd == 'B':
+                    AtoB.append(program)
+            elif cStart == 'B':
+                if cEnd == 'B':
+                    BtoB.append(program)
+                elif cEnd == 'C':
+                    BtoC.append(program)
+                elif cEnd == 'D':
+                    BtoD.append(program)
+            elif cStart == 'C':
+                if cEnd == 'C':
+                    CtoC.append(program)
+                elif cEnd == 'D':
+                    CtoD.append(program)
+            elif cStart == 'D':
+                DtoD.append(program)
+        if shouldPrint:
+            print(f"AtoA: {AtoA}")
+            print(f"AtoB: {AtoB}")
+            print(f"BtoB: {BtoB}")
+            print(f"BtoC: {BtoC}")
+            print(f"BtoD: {BtoD}")
+            print(f"CtoC: {CtoC}")
+            print(f"CtoD: {CtoD}")
+            print(f"DtoD: {DtoD}")
+        return AtoA, AtoB, BtoB, BtoC, BtoD, CtoC, CtoD, DtoD
